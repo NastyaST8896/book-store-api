@@ -1,0 +1,34 @@
+{
+  "name": "book-store-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon",
+    "migration:create": "ts-node node_modules/typeorm/cli.js migration:generate --dataSource src/config/database.ts",
+    "migration:run": "ts-node node_modules/typeorm/cli.js migration:run --dataSource src/config/database.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "pg": "^8.18.0",
+    "pg-query-stream": "^4.12.0",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.28",
+    "validator": "^13.15.26"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.2.0",
+    "@types/validator": "^13.15.10",
+    "nodemon": "^3.1.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
