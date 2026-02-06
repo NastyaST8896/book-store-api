@@ -2,9 +2,13 @@ import { NextFunction, Response } from 'express';
 import { User } from '../db/entities/user';
 import { userRepository } from '../db/repositories/repository';
 import bcrypt from 'bcryptjs';
-import { AppRequest } from '../types/utils';
+import { AppRequest } from '../utils/types';
 import { validateEmail, validatePassword } from '../utils/validations';
-import { checkIsEmailAvailable } from '../utils/helpers';
+import { 
+  checkIsEmailAvailable,
+  checkIsUserEmailExist, 
+  checkIsPasswordsMatch 
+} from '../utils/helpers';
 
 
 type UserType = {
@@ -13,10 +17,6 @@ type UserType = {
   email: string,
   password: string,
 }
-
-
-
-
 
 const registerUser = async (req: AppRequest<UserType>, res: Response, next: NextFunction) => {
   // try {
@@ -31,7 +31,6 @@ const registerUser = async (req: AppRequest<UserType>, res: Response, next: Next
   user.password = await bcrypt.hash(password, 10);
 
   const d = await userRepository.manager.save(user);
-  console.log('d', d);
 
   return res.status(201).json(user);
 
@@ -40,14 +39,31 @@ const registerUser = async (req: AppRequest<UserType>, res: Response, next: Next
   //   return;
   // }
 
-
-
   // } catch (err) {
   //   next(err);
   // res.status(500).json({ message: err.message });
   // }
 };
 
+const authorizeUser = async (req: AppRequest<UserType>, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+
+  await checkIsUserEmailExist(email)
+
+   const user = await userRepository.findOne({where: {email}});
+
+  const authPassword = await bcrypt.hash(password, 10);
+
+  const PasswordsMatch = await bcrypt.compare(authPassword, user.password);
+  console.log(authPassword);
+  console.log(user.password);
+
+  await checkIsPasswordsMatch(PasswordsMatch);
+
+  return res.status(201).json(user);
+};
+
 export default {
   registerUser,
+  authorizeUser,
 };
