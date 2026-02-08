@@ -4,11 +4,11 @@ import { userRepository } from '../db/repositories/repository';
 import bcrypt from 'bcryptjs';
 import { AppRequest } from '../utils/types';
 import { validateEmail, validatePassword } from '../utils/validations';
-import { 
+import {
   checkIsEmailAvailable,
-  checkIsUserEmailExist, 
-  checkIsPasswordsMatch 
 } from '../utils/helpers';
+import { AppError } from '../utils/app-error';
+import jwt from 'jsonwebtoken';
 
 
 type UserType = {
@@ -18,8 +18,7 @@ type UserType = {
   password: string,
 }
 
-const registerUser = async (req: AppRequest<UserType>, res: Response, next: NextFunction) => {
-  // try {
+const registerUser = async (req: AppRequest<UserType>, res: Response) => {
   const { email, password } = req.body;
 
   validatePassword(password);
@@ -30,37 +29,37 @@ const registerUser = async (req: AppRequest<UserType>, res: Response, next: Next
 
   user.password = await bcrypt.hash(password, 10);
 
-  const d = await userRepository.manager.save(user);
+  await userRepository.manager.save(user);
 
   return res.status(201).json(user);
-
-  // if (error.message.includes('unique')) {
-  //   res.status(400).json({ message: 'User already exists' });
-  //   return;
-  // }
-
-  // } catch (err) {
-  //   next(err);
-  // res.status(500).json({ message: err.message });
-  // }
 };
 
-const authorizeUser = async (req: AppRequest<UserType>, res: Response, next: NextFunction) => {
+const authorizeUser = async (req: AppRequest<UserType>, res: Response) => {
   const { email, password } = req.body;
 
-  await checkIsUserEmailExist(email)
+  if (!email || !password) {
+    throw new AppError('Email or password is missing', 400);
+  }
 
-   const user = await userRepository.findOne({where: {email}});
+  const user = await userRepository.findOne({ where: { email } });
 
-  const authPassword = await bcrypt.hash(password, 10);
+  if (!user) {
+    throw new AppError('Incorrect password or email', 400);
+  }
 
-  const PasswordsMatch = await bcrypt.compare(authPassword, user.password);
-  console.log(authPassword);
-  console.log(user.password);
+  const isPasswordsMatch = await bcrypt.compare(password, user.password);
 
-  await checkIsPasswordsMatch(PasswordsMatch);
+  if (!isPasswordsMatch) {
+    throw new AppError('Incorrect password or email', 400);
+  }
 
-  return res.status(201).json(user);
+  const secret = process.env.JWT_SECRET;
+
+  const accessToken = jwt.sign({ id: user.id, email: user.email }, secret, {
+    expiresIn: '15m'
+  });
+
+  return res.status(200).json({ user: { id: user.id, email: user.email }, accessToken });
 };
 
 export default {

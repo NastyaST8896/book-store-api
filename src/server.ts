@@ -5,7 +5,6 @@ import app from './app';
 
 const PORT = process.env.PORT || 3000;
 
-
 AppDataSource.initialize()
   .then(() => {
     app.listen(PORT, (err) => {
