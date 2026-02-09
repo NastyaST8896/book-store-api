@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon",
-    "migration:create": "ts-node node_modules/typeorm/cli.js migration:generate --dataSource src/config/database.ts",
+    "migration:create": "ts-node node_modules/typeorm/cli.js migration:generate --dataSource src/config/database.ts src/db/migrations/removeIdFromRefresh",
     "migration:run": "ts-node node_modules/typeorm/cli.js migration:run --dataSource src/config/database.ts"
   },
   "keywords": [],
@@ -14,6 +14,7 @@
   "type": "commonjs",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
@@ -26,7 +27,10 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.2.0",
     "@types/validator": "^13.15.10",
     "nodemon": "^3.1.11",

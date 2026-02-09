@@ -1,6 +1,6 @@
-import { NextFunction, Response } from 'express';
+import { Response } from 'express';
 import { User } from '../db/entities/user';
-import { userRepository } from '../db/repositories/repository';
+import { refreshTokenRepository, userRepository } from '../db/repositories/repository';
 import bcrypt from 'bcryptjs';
 import { AppRequest } from '../utils/types';
 import { validateEmail, validatePassword } from '../utils/validations';
@@ -8,8 +8,8 @@ import {
   checkIsEmailAvailable,
 } from '../utils/helpers';
 import { AppError } from '../utils/app-error';
-import jwt from 'jsonwebtoken';
 
+const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
 type UserType = {
   id?: number,
@@ -53,13 +53,25 @@ const authorizeUser = async (req: AppRequest<UserType>, res: Response) => {
     throw new AppError('Incorrect password or email', 400);
   }
 
-  const secret = process.env.JWT_SECRET;
+  const accessToken = user.generateToken();
 
-  const accessToken = jwt.sign({ id: user.id, email: user.email }, secret, {
-    expiresIn: '15m'
+  const refreshToken = refreshTokenRepository.create({
+    ipAddress: req.ip,
+    userId: user.id,
+    expiresAt: new Date(Date.now() + SEVEN_DAYS)
+  });
+  await refreshTokenRepository.save(refreshToken);
+
+  console.log(refreshToken.token);
+
+  res.cookie('refreshToken', refreshToken.token, {
+    httpOnly: true,
+    // secure: true,
+    sameSite: 'strict',
+    maxAge: SEVEN_DAYS,
   });
 
-  return res.status(200).json({ user: { id: user.id, email: user.email }, accessToken });
+  return res.status(200).json({ user: { id: user.id, email: user.email }, token: accessToken });
 };
 
 export default {
