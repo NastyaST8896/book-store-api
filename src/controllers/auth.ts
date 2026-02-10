@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { NextFunction, Response } from 'express';
 import { User } from '../db/entities/user';
 import {
   refreshTokenRepository,
@@ -8,11 +8,9 @@ import bcrypt from 'bcryptjs';
 import { AppRequest } from '../utils/types';
 import { validateEmail, validatePassword } from '../utils/validations';
 import {
-  checkIsEmailAvailable,
+  checkIsEmailAvailable, jwtVerify,
 } from '../utils/helpers';
 import { AppError } from '../utils/app-error';
-import jwt from 'jsonwebtoken';
-
 
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
@@ -21,11 +19,6 @@ type UserType = {
   fullName?: string,
   email: string,
   password: string,
-}
-
-type JWTPayload = {
-  id: number,
-  email: string
 }
 
 const registerUser = async (req: AppRequest<UserType>, res: Response) => {
@@ -75,58 +68,60 @@ const authorizeUser = async (req: AppRequest<UserType>, res: Response) => {
   return res.status(200).json({
     user: { id: user.id, email: user.email },
     accessToken,
-    refreshToken,
+    refreshToken: refreshToken.token,
   });
 };
 
-const refreshTokenUser = async (req, res: Response) => {
-  const token = req.refreshToken;
+const refreshTokenUser = async (req: AppRequest<{ refreshToken: string }>, res: Response) => {
+  const token = req.body.refreshToken;
 
   if (!token) {
-    throw new AppError('Refresh token missing', 403)
+    throw new AppError('Refresh token missing', 403);
   }
 
-  const dbToken = await refreshTokenRepository.findOne({ where: { token } });
+  const dbToken = await refreshTokenRepository.findOne({ where: { token }, relations: { user: true } });
 
-  if (dbToken.expiresAt <= new Date(Date.now())) {
-    throw new AppError('Refresh token expired', 403)
+  if (dbToken.expiresAt <= new Date()) {
+    throw new AppError('Refresh token expired', 403);
   }
 
   const accessToken = dbToken.user.generateToken();
 
-  return res.status(200).json({token: accessToken });
+  const refreshToken = refreshTokenRepository.create({
+    ipAddress: req.ip,
+    userId: dbToken.user.id,
+    expiresAt: new Date(Date.now() + SEVEN_DAYS)
+  });
+  await refreshTokenRepository.save(refreshToken);
+
+  return res.status(200).json({ accessToken, refreshToken: refreshToken.token });
 };
 
-const getUser = async (req, res:Response) => {
-  const accessToken = req.body.accessToken;
+const checkAuthUser = async (req: AppRequest, res: Response) => {
+  const authHeader = req.headers['authorization'];
 
-  console.log(accessToken)
+  const token = authHeader && authHeader.split(' ')[1];
 
-  if (!accessToken) {
+  if (!token) {
     throw new AppError('Access token missing', 401);
   }
-// process.env.JWT_ACCESS_SECRET
 
-  // const data = JSON.parse(jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET) as string);
-  const data = jwt.verify(
-    accessToken,
-    process.env.JWT_ACCESS_SECRET
-  ) as jwt.JwtPayload;
-  console.log('data', data);
-  // const accessTokenParts = accessToken.split('.');
-  // const tokenPayloadPart = JSON.parse(atob(accessTokenParts[1]));
-  // const email = tokenPayloadPart.email;
-  const { email } = data;
-   console.log(email);
+  const data = await jwtVerify(token);
 
-  const user = await userRepository.findOne({ where: { email } });
+  const { id } = data;
 
-  return res.status(200).json({ user });
-}
+  const user = await userRepository.findOne({ where: { id } });
+
+  if (!user) {
+    throw new AppError('Something went wrong', 500);
+  }
+
+  res.status(200).json({ fullName: user.fullName, email: user.email });
+};
 
 export default {
   registerUser,
   authorizeUser,
   refreshTokenUser,
-  getUser
+  checkAuthUser
 };

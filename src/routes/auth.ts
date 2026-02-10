@@ -5,5 +5,5 @@ export const authRouter = Router()
   .post('/register', userController.registerUser)
   .post('/login', userController.authorizeUser)
   .post('/refresh', userController.refreshTokenUser)
-  .post('/userSpace', userController.getUser)
+  .get('/check-auth', userController.checkAuthUser)
 
