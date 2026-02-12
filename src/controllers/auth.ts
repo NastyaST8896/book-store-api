@@ -1,4 +1,4 @@
-import { NextFunction, Response } from 'express';
+import { Response } from 'express';
 import { User } from '../db/entities/user';
 import {
   refreshTokenRepository,
@@ -119,9 +119,34 @@ const checkAuthUser = async (req: AppRequest, res: Response) => {
   res.status(200).json({ fullName: user.fullName, email: user.email });
 };
 
+const changeUser = async (req: AppRequest, res: Response) => {
+  const authHeader = req.headers['authorization'];
+  const { fullName } = req.body;
+
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    throw new AppError('Access token missing', 401);
+  }
+
+  const data = await jwtVerify(token);
+
+  const { email } = data;
+
+  const user = await userRepository.findOne({ where: { email } });
+
+    user.fullName = fullName;
+
+   await userRepository.save(user);
+
+   res.status(200).json({fullName: user.fullName, email: user.email})
+  
+}
+
 export default {
   registerUser,
   authorizeUser,
   refreshTokenUser,
-  checkAuthUser
+  checkAuthUser,
+  changeUser
 };
