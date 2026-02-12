@@ -7,9 +7,7 @@ import {
 import bcrypt from 'bcryptjs';
 import { AppRequest } from '../utils/types';
 import { validateEmail, validatePassword } from '../utils/validations';
-import {
-  checkIsEmailAvailable, jwtVerify,
-} from '../utils/helpers';
+import { checkIsEmailAvailable } from '../utils/helpers';
 import { AppError } from '../utils/app-error';
 
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
@@ -66,7 +64,7 @@ const authorizeUser = async (req: AppRequest<UserType>, res: Response) => {
   await refreshTokenRepository.save(refreshToken);
 
   return res.status(200).json({
-    user: { id: user.id, email: user.email },
+    user: { fullName: user.fullName, email: user.email },
     accessToken,
     refreshToken: refreshToken.token,
   });
@@ -98,19 +96,7 @@ const refreshTokenUser = async (req: AppRequest<{ refreshToken: string }>, res: 
 };
 
 const checkAuthUser = async (req: AppRequest, res: Response) => {
-  const authHeader = req.headers['authorization'];
-
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    throw new AppError('Access token missing', 401);
-  }
-
-  const data = await jwtVerify(token);
-
-  const { id } = data;
-
-  const user = await userRepository.findOne({ where: { id } });
+  const user = await userRepository.findOne({ where: { id: req.user.id } });
 
   if (!user) {
     throw new AppError('Something went wrong', 500);
@@ -120,28 +106,16 @@ const checkAuthUser = async (req: AppRequest, res: Response) => {
 };
 
 const changeUser = async (req: AppRequest, res: Response) => {
-  const authHeader = req.headers['authorization'];
   const { fullName } = req.body;
 
-  const token = authHeader && authHeader.split(' ')[1];
+  const user = await userRepository.findOne({ where: { email: req.user.email } });
 
-  if (!token) {
-    throw new AppError('Access token missing', 401);
-  }
+  user.fullName = fullName;
 
-  const data = await jwtVerify(token);
+  await userRepository.save(user);
 
-  const { email } = data;
-
-  const user = await userRepository.findOne({ where: { email } });
-
-    user.fullName = fullName;
-
-   await userRepository.save(user);
-
-   res.status(200).json({fullName: user.fullName, email: user.email})
-  
-}
+  res.status(200).json({ fullName: user.fullName, email: user.email });
+};
 
 export default {
   registerUser,
