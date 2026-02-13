@@ -7,5 +7,5 @@ export const authRouter = Router()
   .post('/login', userController.authorizeUser)
   .post('/refresh', userController.refreshTokenUser)
   .get('/check-auth', authenticateToken, userController.checkAuthUser)
-  .post('/change', authenticateToken, userController.changeUser);
-
+  .post('/change-name', authenticateToken, userController.changeUserName)
+  .post('/change-password', authenticateToken, userController.changeUserPassword);

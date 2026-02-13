@@ -70,14 +70,20 @@ const authorizeUser = async (req: AppRequest<UserType>, res: Response) => {
   });
 };
 
-const refreshTokenUser = async (req: AppRequest<{ refreshToken: string }>, res: Response) => {
+const refreshTokenUser = async (
+  req: AppRequest<{ refreshToken: string }>,
+  res: Response
+) => {
   const token = req.body.refreshToken;
 
   if (!token) {
     throw new AppError('Refresh token missing', 403);
   }
 
-  const dbToken = await refreshTokenRepository.findOne({ where: { token }, relations: { user: true } });
+  const dbToken = await refreshTokenRepository.findOne({
+    where: { token },
+    relations: { user: true }
+  });
 
   if (dbToken.expiresAt <= new Date()) {
     throw new AppError('Refresh token expired', 403);
@@ -92,7 +98,10 @@ const refreshTokenUser = async (req: AppRequest<{ refreshToken: string }>, res: 
   });
   await refreshTokenRepository.save(refreshToken);
 
-  return res.status(200).json({ accessToken, refreshToken: refreshToken.token });
+  return res.status(200).json({
+    accessToken,
+    refreshToken: refreshToken.token
+  });
 };
 
 const checkAuthUser = async (req: AppRequest, res: Response) => {
@@ -105,10 +114,16 @@ const checkAuthUser = async (req: AppRequest, res: Response) => {
   res.status(200).json({ fullName: user.fullName, email: user.email });
 };
 
-const changeUser = async (req: AppRequest, res: Response) => {
+const changeUserName = async (req: AppRequest, res: Response) => {
   const { fullName } = req.body;
 
-  const user = await userRepository.findOne({ where: { email: req.user.email } });
+  if(!fullName) {
+    throw new AppError('Name or passwords is missing', 400);
+  }
+
+  const user = await userRepository.findOne({ 
+    where: { email: req.user.email } 
+  });
 
   user.fullName = fullName;
 
@@ -117,10 +132,37 @@ const changeUser = async (req: AppRequest, res: Response) => {
   res.status(200).json({ fullName: user.fullName, email: user.email });
 };
 
+const changeUserPassword = async (req: AppRequest, res: Response) => {
+  const { oldPassword, newPassword } = req.body;
+
+  if(!oldPassword || !newPassword) {
+    throw new AppError('Passwords is missing', 400);
+  }
+
+  const user = await userRepository.findOne({ 
+    where: { email: req.user.email } 
+  });
+
+  const isPasswordsMatch = await bcrypt.compare(oldPassword, user.password);
+
+  if (!isPasswordsMatch) {
+    throw new AppError('Incorrect password or email', 400);
+  }
+
+  validatePassword(newPassword);
+
+  user.password = newPassword;
+
+  await userRepository.save(user);
+
+  res.status(200).json({ status: 'ok' });
+};
+
 export default {
   registerUser,
   authorizeUser,
   refreshTokenUser,
   checkAuthUser,
-  changeUser
+  changeUserName,
+  changeUserPassword
 };
