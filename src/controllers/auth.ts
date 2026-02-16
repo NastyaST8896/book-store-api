@@ -56,6 +56,15 @@ const authorizeUser = async (req: AppRequest<UserType>, res: Response) => {
 
   const accessToken = user.generateToken();
 
+  res.cookie(
+    'accessToken',
+    accessToken,
+    {
+      httpOnly: true,
+      maxAge: 60 * 60 * 1000,
+    }
+  )
+
   const refreshToken = refreshTokenRepository.create({
     ipAddress: req.ip,
     userId: user.id,
@@ -117,12 +126,12 @@ const checkAuthUser = async (req: AppRequest, res: Response) => {
 const changeUserName = async (req: AppRequest, res: Response) => {
   const { fullName } = req.body;
 
-  if(!fullName) {
-    throw new AppError('Name or passwords is missing', 400);
+  if (!fullName) {
+    throw new AppError('Name is missing', 400);
   }
 
-  const user = await userRepository.findOne({ 
-    where: { email: req.user.email } 
+  const user = await userRepository.findOne({
+    where: { email: req.user.email }
   });
 
   user.fullName = fullName;
@@ -135,12 +144,12 @@ const changeUserName = async (req: AppRequest, res: Response) => {
 const changeUserPassword = async (req: AppRequest, res: Response) => {
   const { oldPassword, newPassword } = req.body;
 
-  if(!oldPassword || !newPassword) {
+  if (!oldPassword || !newPassword) {
     throw new AppError('Passwords is missing', 400);
   }
 
-  const user = await userRepository.findOne({ 
-    where: { email: req.user.email } 
+  const user = await userRepository.findOne({
+    where: { email: req.user.email }
   });
 
   const isPasswordsMatch = await bcrypt.compare(oldPassword, user.password);
@@ -151,7 +160,7 @@ const changeUserPassword = async (req: AppRequest, res: Response) => {
 
   validatePassword(newPassword);
 
-  user.password = newPassword;
+  user.password = await bcrypt.hash(newPassword, 10);
 
   await userRepository.save(user);
 

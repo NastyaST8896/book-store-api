@@ -34,8 +34,9 @@ export const jwtVerify = (token: string) => {
 };
 
 export const authenticateToken = async (req: AppRequest, res: Response, next: NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  // const authHeader = req.headers['authorization'];
+  // const token = authHeader && authHeader.split(' ')[1];
+  const token = req.cookies.accessToken;
 
   if (!token) {
     return res.status(401).json({ message: 'Token missing' });

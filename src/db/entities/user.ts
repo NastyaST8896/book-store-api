@@ -23,9 +23,7 @@ export class User {
     return jwt.sign(
       { id: this.id, email: this.email },
       process.env.JWT_ACCESS_SECRET,
-      { expiresIn: '15m' }
+      { expiresIn: '60m' }
     );
   }
 }
-
-
