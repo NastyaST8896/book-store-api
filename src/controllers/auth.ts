@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { User } from '../db/entities/user';
 import {
+  avatarRepository,
   refreshTokenRepository,
   userRepository
 } from '../db/repositories/repository';
@@ -171,11 +172,21 @@ const changeUserPassword = async (req: AppRequest, res: Response) => {
 };
 
 const changeUserAvatar = async (req, res) => {
-  const avatar = req.file
-  console.log(avatar)
+  const avatar = req.file;
+
   if(!avatar) {
     throw new AppError("No file uploaded", 400);
   }
+
+  const newAvatar = avatarRepository.create({
+    originalName: avatar.originalname,
+    uploadName: avatar.filename,
+    filePath: avatar.path,
+    mimeType: avatar.mimetype,
+    size: avatar.size,
+  })
+
+  await avatarRepository.save(newAvatar);
 
   res.status(200).json({ status: 'ok' });
 }
