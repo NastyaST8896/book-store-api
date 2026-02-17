@@ -4,7 +4,7 @@ import { authRouter } from './routes/auth';
 import cookieParser from 'cookie-parser';
 
 const app: Application = express();
-
+// todo
 app.use(cors({ credentials: true, origin: 'http://localhost:5173' }));
 app.use(express.json());
 app.use(cookieParser());

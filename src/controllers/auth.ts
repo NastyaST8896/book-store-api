@@ -9,6 +9,9 @@ import { AppRequest } from '../utils/types';
 import { validateEmail, validatePassword } from '../utils/validations';
 import { checkIsEmailAvailable } from '../utils/helpers';
 import { AppError } from '../utils/app-error';
+import multer from 'multer';
+
+
 
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
@@ -167,11 +170,22 @@ const changeUserPassword = async (req: AppRequest, res: Response) => {
   res.status(200).json({ status: 'ok' });
 };
 
+const changeUserAvatar = async (req, res) => {
+  const avatar = req.file
+  console.log(avatar)
+  if(!avatar) {
+    throw new AppError("No file uploaded", 400);
+  }
+
+  res.status(200).json({ status: 'ok' });
+}
+
 export default {
   registerUser,
   authorizeUser,
   refreshTokenUser,
   checkAuthUser,
   changeUserName,
-  changeUserPassword
+  changeUserPassword,
+  changeUserAvatar
 };
