@@ -5,6 +5,8 @@ import { mediaRepository } from '../db/repositories/repository';
 import { userRepository } from '../db/repositories/repository';
 import bcrypt from 'bcryptjs';
 import { validatePassword } from '../utils/validations';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const getUser = async (req, res: Response) => {
   const user = await userRepository.findOne({
@@ -16,16 +18,12 @@ const getUser = async (req, res: Response) => {
     throw new AppError('Something went wrong', 500);
   }
 
-  const avatar = await mediaRepository.findOne({
-    where: {id: user.media.id}
-  })
-
   res.status(200).json({
-    fullName: user.fullName, 
-    email: user.email, 
-    avatar: avatar.filePath
+    fullName: user.fullName,
+    email: user.email,
+    avatar: user.media?.filePath || null
   });
-}
+};
 
 const changeUserName = async (req: AppRequest, res: Response) => {
   const { fullName } = req.body;
@@ -75,7 +73,7 @@ const changeUserAvatar = async (req, res) => {
   const avatar = req.file;
 
   if (!avatar) {
-    throw new AppError("No file uploaded", 400);
+    throw new AppError('No file uploaded', 400);
   }
 
   const newAvatar = mediaRepository.create({
@@ -84,24 +82,41 @@ const changeUserAvatar = async (req, res) => {
     filePath: avatar.path,
     mimeType: avatar.mimetype,
     size: avatar.size,
-  })
+  });
 
   await mediaRepository.save(newAvatar);
 
-  const user = await userRepository.update({
-    email: req.user.email
-  }, {
-    media: newAvatar
-  });
+  const user = await userRepository.findOne({ where: { email: req.user.email }, relations: ['media'] });
 
-  console.log(user);
 
-  res.status(200).json({ status: 'ok' });
+  const prevMediaId = user.media?.id;
+  const prevMediaName = user.media?.uploadName;
+
+  user.media = newAvatar;
+
+  await userRepository.save(user);
+
+  if(prevMediaId) {
+    await mediaRepository.delete(prevMediaId);
+
+    const filePath = path.join(__dirname, '../../uploads/', prevMediaName);
+
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        if (err.code === 'ENOENT') {
+          return res.status(404).send('Файл не найден');
+        }
+        return res.status(500).send('Ошибка при удалении файла');
+      }
+    });
+  }
+
+  res.status(200).json({ avatar: user.media.filePath });
 };
 
-  export default {
-    changeUserName,
-    changeUserPassword,
-    changeUserAvatar,
-    getUser
-  };
+export default {
+  changeUserName,
+  changeUserPassword,
+  changeUserAvatar,
+  getUser
+};
