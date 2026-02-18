@@ -2,11 +2,14 @@ import {
   Entity, 
   PrimaryGeneratedColumn, 
   Column, 
-  CreateDateColumn 
+  CreateDateColumn, 
+  OneToOne,
+  JoinColumn
 } from 'typeorm';
+import { User } from './user';
 
 @Entity()
-export class Avatar {
+export class Media {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -24,6 +27,9 @@ export class Avatar {
 
   @Column('int')
   size: number;
+
+  @OneToOne(()  => User, (user) => user.media)
+  user: User;
 
   @CreateDateColumn({type: 'timestamp'})
   createAt: Date;

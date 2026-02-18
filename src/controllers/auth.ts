@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { User } from '../db/entities/user';
 import {
-  avatarRepository,
   refreshTokenRepository,
   userRepository
 } from '../db/repositories/repository';
@@ -10,7 +9,6 @@ import { AppRequest } from '../utils/types';
 import { validateEmail, validatePassword } from '../utils/validations';
 import { checkIsEmailAvailable } from '../utils/helpers';
 import { AppError } from '../utils/app-error';
-import multer from 'multer';
 
 
 
@@ -127,76 +125,9 @@ const checkAuthUser = async (req: AppRequest, res: Response) => {
   res.status(200).json({ fullName: user.fullName, email: user.email });
 };
 
-const changeUserName = async (req: AppRequest, res: Response) => {
-  const { fullName } = req.body;
-
-  if (!fullName) {
-    throw new AppError('Name is missing', 400);
-  }
-
-  const user = await userRepository.findOne({
-    where: { email: req.user.email }
-  });
-
-  user.fullName = fullName;
-
-  await userRepository.save(user);
-
-  res.status(200).json({ fullName: user.fullName, email: user.email });
-};
-
-const changeUserPassword = async (req: AppRequest, res: Response) => {
-  const { oldPassword, newPassword } = req.body;
-
-  if (!oldPassword || !newPassword) {
-    throw new AppError('Passwords is missing', 400);
-  }
-
-  const user = await userRepository.findOne({
-    where: { email: req.user.email }
-  });
-
-  const isPasswordsMatch = await bcrypt.compare(oldPassword, user.password);
-
-  if (!isPasswordsMatch) {
-    throw new AppError('Incorrect password or email', 400);
-  }
-
-  validatePassword(newPassword);
-
-  user.password = await bcrypt.hash(newPassword, 10);
-
-  await userRepository.save(user);
-
-  res.status(200).json({ status: 'ok' });
-};
-
-const changeUserAvatar = async (req, res) => {
-  const avatar = req.file;
-
-  if(!avatar) {
-    throw new AppError("No file uploaded", 400);
-  }
-
-  const newAvatar = avatarRepository.create({
-    originalName: avatar.originalname,
-    uploadName: avatar.filename,
-    filePath: avatar.path,
-    mimeType: avatar.mimetype,
-    size: avatar.size,
-  })
-
-  await avatarRepository.save(newAvatar);
-
-  res.status(200).json({ status: 'ok' });
-}
-
 export default {
   registerUser,
   authorizeUser,
   refreshTokenUser,
   checkAuthUser,
-  changeUserName,
-  changeUserPassword,
-  changeUserAvatar
 };
