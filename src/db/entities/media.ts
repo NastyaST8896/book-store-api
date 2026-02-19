@@ -4,9 +4,9 @@ import {
   Column, 
   CreateDateColumn, 
   OneToOne,
-  JoinColumn
 } from 'typeorm';
 import { User } from './user';
+import { Book } from './book';
 
 @Entity()
 export class Media {
@@ -30,6 +30,9 @@ export class Media {
 
   @OneToOne(()  => User, (user) => user.media)
   user: User;
+
+  @OneToOne(() => Book, (book) => book.media) // указываем обратную связь
+  book: Book;
 
   @CreateDateColumn({type: 'timestamp'})
   createAt: Date;

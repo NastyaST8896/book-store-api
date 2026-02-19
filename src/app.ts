@@ -3,6 +3,7 @@ import express, { Application } from 'express';
 import { authRouter } from './routes/auth';
 import { userRouter } from './routes/user'
 import cookieParser from 'cookie-parser';
+import { bookRouter } from './routes/book';
 
 const app: Application = express();
 // todo
@@ -13,6 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 app.use('/', authRouter);
 app.use('/user', userRouter);
+app.use('/books', bookRouter);
 
 app.use((err, req, res, next) => {
   res.status(err.status || 500)
