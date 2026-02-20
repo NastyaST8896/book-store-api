@@ -2,13 +2,17 @@ import multer from 'multer';
 import path from 'node:path';
 import { Router } from 'express';
 import bookController from '../controllers/book';
+import schemaValidator from '../schemaValidator';
 
 const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
+  destination: function (req, file, cb) {
     cb(null, 'uploads/');
   },
-  filename: function(req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+  filename: function (req, file, cb) {
+    cb(
+      null,
+      file.fieldname + '-' + Date.now() + path.extname(file.originalname)
+    );
   }
 });
 
@@ -21,8 +25,8 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({storage: storage, fileFilter: fileFilter});
+const upload = multer({ storage: storage, fileFilter: fileFilter });
 
 export const bookRouter = Router()
-  .get('/', bookController.getBooks)
+  .get('/', schemaValidator("/books/get-books"), bookController.getBooks)
   .post('/create-book', upload.single('cover'), bookController.createBook);

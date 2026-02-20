@@ -4,7 +4,7 @@ import { Book } from '../db/entities/book';
 
 import { Media } from '../db/entities/media';
 import { AppRequest } from '../utils/types';
-import { Between } from 'typeorm';
+import { Between, In, Or, Like } from 'typeorm';
 
 const createBook = async (req, res: Response) => {
   const { title, author, releaseDate, genre, price, rating } = req.body;
@@ -35,19 +35,35 @@ const createBook = async (req, res: Response) => {
   return res.status(201).json(book);
 };
 
-const getBooks = async (req: AppRequest, res: Response) => {
-  let page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 12;
+const getBooks = async (req, res: Response) => {
+  let page = req.query.page || 1;
+  const limit = req.query.limit || 12;
+
+  const filterBy = req.query.filter;
+
+  const stringGenres = req.query.genres;
+
+  const where: any = {};
+  
+  where.price = Between(
+    req.query.minPrice 
+    || 0, req.query.maxPrice 
+    || Infinity);
+  
 
   const skip = (page - 1) * limit;
+
+  console.log('genres =>', stringGenres)
+
+
 
   const [books, total] = await bookRepository.findAndCount({
     skip,
     take: limit,
     order: {
-      id: 'asc',
+      [filterBy]: 'asc',
     },
-    // where: { price: Between(9, 30) }
+    where
   });
 
   const totalPages = Math.ceil(total / limit);
