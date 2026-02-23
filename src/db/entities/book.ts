@@ -3,9 +3,10 @@ import {
   PrimaryGeneratedColumn,
   Column,
   OneToOne,
-  JoinColumn,
+  JoinColumn, ManyToMany,
 } from 'typeorm';
 import { Media } from './media';
+import { User } from './user';
 
 @Entity()
 export class Book {
@@ -31,10 +32,12 @@ export class Book {
   rating: number;
 
   @OneToOne(() => Media, (image) => image.book, {
-    cascade: true,
-    eager: true,
+    cascade: true
   })
 
   @JoinColumn()
   media: Media;
+
+  @ManyToMany(() => User, (user) => user.likedBooks)
+  likedBy: User[];
 }

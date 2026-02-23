@@ -1,4 +1,4 @@
-import Joi, { ObjectSchema } from "joi";
+import Joi, { ObjectSchema } from 'joi';
 
 const getBooks = Joi.object().keys({
   page: Joi.number().integer(),
@@ -9,11 +9,11 @@ const getBooks = Joi.object().keys({
   genres: Joi.alternatives().try(
     Joi.array().items(Joi.string()),
     Joi.string().custom((value) => {
-      return value.split(',').map(item => item.trim());
+      return value.split(',').map((item) => item.trim());
     })
   )
 });
 
 export default {
-  "/books/get-books": getBooks,
+  'get-books': getBooks,
 } as { [key: string]: ObjectSchema };

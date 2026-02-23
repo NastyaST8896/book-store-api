@@ -1,7 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  OneToOne,
+  JoinColumn,
+  ManyToMany, JoinTable
+} from 'typeorm';
 import { RefreshToken } from './refresh-token';
 import { Media } from './media';
 import jwt from 'jsonwebtoken';
+import { Book } from './book';
 
 @Entity()
 export class User {
@@ -23,6 +32,10 @@ export class User {
   @OneToOne(() => Media)
   @JoinColumn()
   media: Media | null;
+
+  @ManyToMany(() => Book, (book) => book.likedBy)
+  @JoinTable({ name: "user_book_likes" })
+  likedBooks: Book[];
 
   generateToken() {
     return jwt.sign(

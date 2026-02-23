@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon",
-    "migration:create": "ts-node node_modules/typeorm/cli.js migration:generate --dataSource src/config/database.ts src/db/migrations/addOneToOneBookMedia",
+    "migration:create": "ts-node node_modules/typeorm/cli.js migration:generate --dataSource src/config/database.ts src/db/migrations/addUserLikesRelation",
     "migration:run": "ts-node node_modules/typeorm/cli.js migration:run --dataSource src/config/database.ts"
   },
   "keywords": [],

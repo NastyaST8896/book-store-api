@@ -28,5 +28,5 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage: storage, fileFilter: fileFilter });
 
 export const bookRouter = Router()
-  .get('/', schemaValidator("/books/get-books"), bookController.getBooks)
+  .get('/', schemaValidator('get-books'), bookController.getBooks)
   .post('/create-book', upload.single('cover'), bookController.createBook);

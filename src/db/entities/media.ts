@@ -1,8 +1,8 @@
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
-  CreateDateColumn, 
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
   OneToOne,
 } from 'typeorm';
 import { User } from './user';
@@ -28,12 +28,12 @@ export class Media {
   @Column('int')
   size: number;
 
-  @OneToOne(()  => User, (user) => user.media)
+  @OneToOne(() => User, (user) => user.media)
   user: User;
 
-  @OneToOne(() => Book, (book) => book.media) // указываем обратную связь
+  @OneToOne(() => Book, (book) => book.media)
   book: Book;
 
-  @CreateDateColumn({type: 'timestamp'})
+  @CreateDateColumn({ type: 'timestamp' })
   createAt: Date;
 }
