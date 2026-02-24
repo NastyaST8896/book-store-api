@@ -37,11 +37,11 @@ const createBook = async (req, res: Response) => {
 
 const getBooks = async (req, res: Response) => {
   let page = req.query.page || 1;
-  const limit = req.query.limit || 12;
+  const limit = req.query.limit || 4;
 
   const filterBy = req.query.filter || 'id';
 
-  const stringGenres = req.query.genres;
+
 
   const where: any = {};
 
@@ -52,7 +52,15 @@ const getBooks = async (req, res: Response) => {
 
   const skip = (page - 1) * limit;
 
-  console.log('genres =>', stringGenres);
+  const genres = await bookRepository.find({
+    select: ['genre']
+  });
+
+  const noRepeatGenres = genres.map((item) => {
+    return item.genre;
+  })
+
+  console.log(noRepeatGenres);
 
   const [books, total] = await bookRepository.findAndCount({
     relations: {
