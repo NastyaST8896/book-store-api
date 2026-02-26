@@ -4,9 +4,11 @@ import {
   Column,
   OneToOne,
   JoinColumn, ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { Media } from './media';
 import { User } from './user';
+import { Genre } from './Genre';
 
 @Entity()
 export class Book {
@@ -21,9 +23,6 @@ export class Book {
 
   @Column({ type: 'date', name: 'release_date' })
   releaseDate: Date;
-
-  @Column()
-  genre: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
@@ -40,4 +39,8 @@ export class Book {
 
   @ManyToMany(() => User, (user) => user.likedBooks)
   likedBy: User[];
+
+  @ManyToMany(() => Genre, (genre) => genre.books)
+  @JoinTable()
+  genres:Genre[];
 }

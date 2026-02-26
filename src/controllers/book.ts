@@ -1,18 +1,51 @@
 import { Response } from 'express';
-import { bookRepository } from '../db/repositories/repository';
+import { bookRepository, genreRepository } from '../db/repositories/repository';
 import { Book } from '../db/entities/book';
+import { Genre } from '../db/entities/Genre';
 
 import { Media } from '../db/entities/media';
-import { Between } from 'typeorm';
+import { Between, In } from 'typeorm';
 import { AppDataSource } from '../config/database';
 
 const createBook = async (req, res: Response) => {
-  const { title, author, releaseDate, genre, price, rating } = req.body;
+  const { title, author, releaseDate, genres, price, rating } = req.body;
   const file = req.file;
 
   if (!file) {
     return res.status(400).json({ message: 'Image is required' });
   }
+
+  let dbGenres: Genre[] = [];
+  let dbNewGenres: Genre[] = [];
+
+  if (genres) {
+    const arrayGeners = genres.split(', ');
+
+    dbGenres = await genreRepository.find({
+      where: { name: In(arrayGeners) },
+    })
+
+    const dbNameGenres = dbGenres.map((genre) => {
+      return genre.name
+    })
+
+    const newGenres = arrayGeners.filter((genre) => {
+      return !dbNameGenres.includes(genre)
+    })
+
+    const addGenres = newGenres.map((name: string) => {
+      const genre = new Genre();
+      genre.name = name;
+      return genre;
+    });
+
+    await genreRepository.save(addGenres);
+
+    dbNewGenres = await genreRepository.find({
+      where: { name: In(newGenres) }
+    })
+  }
+
 
   const media = new Media();
   media.originalName = file.originalname;
@@ -25,10 +58,10 @@ const createBook = async (req, res: Response) => {
   book.title = title;
   book.author = author;
   book.releaseDate = releaseDate;
-  book.genre = genre;
   book.price = price;
   book.rating = rating;
   book.media = media;
+  book.genres = [...dbGenres, ...dbNewGenres]
 
   await bookRepository.save(book);
 
@@ -41,7 +74,9 @@ const getBooks = async (req, res: Response) => {
 
   const filterBy = req.query.filter || 'id';
 
+  const genres = req.query.genres || null;
 
+  console.log(typeof genres)
 
   const where: any = {};
 
@@ -50,17 +85,21 @@ const getBooks = async (req, res: Response) => {
     req.query.maxPrice || Infinity
   );
 
+
   const skip = (page - 1) * limit;
 
-  const genres = await bookRepository.find({
-    select: ['genre']
-  });
+  const allGenres = await genreRepository.find();
 
-  const noRepeatGenres = genres.map((item) => {
-    return item.genre;
+  const arrayGenres = allGenres.map((item) => {
+    return { id: item.id, genre: item.name }
   })
 
-  console.log(noRepeatGenres);
+  // if (genres.length) {
+  //   console.log(genres)
+  //   where.genres = {
+  //    name: In(genres)
+  //   }
+  // }
 
   const [books, total] = await bookRepository.findAndCount({
     relations: {
@@ -81,7 +120,7 @@ const getBooks = async (req, res: Response) => {
 
   const totalPages = Math.ceil(total / limit);
 
-  res.status(200).json({ books: result, totalPages });
+  res.status(200).json({ books: result, totalPages, genres: arrayGenres })
 
   // const books = await bookRepository.find();
   //
