@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { Media } from './media';
 import { User } from './user';
-import { Genre } from './Genre';
+import { Genre } from './genre';
 
 @Entity()
 export class Book {

@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { RequestHandler, Response } from 'express';
 import { User } from '../db/entities/user';
 import {
   refreshTokenRepository,
@@ -115,7 +115,7 @@ const refreshTokenUser = async (
   });
 };
 
-const checkAuthUser = async (req: AppRequest, res: Response) => {
+const checkAuthUser: RequestHandler = async (req: AppRequest, res: Response) => {
   const user = await userRepository.findOne({ where: { id: req.user.id } });
 
   if (!user) {

@@ -3,7 +3,7 @@ import { User } from '../entities/user'
 import { RefreshToken } from '../entities/refresh-token';
 import { Media } from "../entities/media";
 import { Book } from '../entities/book';
-import { Genre } from "../entities/Genre";
+import { Genre } from "../entities/genre";
 
 export const userRepository = AppDataSource.getRepository(User);
 export const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);

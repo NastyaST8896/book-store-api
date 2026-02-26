@@ -1,13 +1,14 @@
 import { Response } from 'express';
 import { bookRepository, genreRepository } from '../db/repositories/repository';
 import { Book } from '../db/entities/book';
-import { Genre } from '../db/entities/Genre';
+import { Genre } from '../db/entities/genre';
 
 import { Media } from '../db/entities/media';
 import { Between, In } from 'typeorm';
 import { AppDataSource } from '../config/database';
+import { AppRequestHandler } from '../utils/types';
 
-const createBook = async (req, res: Response) => {
+const createBook: AppRequestHandler = async (req, res) => {
   const { title, author, releaseDate, genres, price, rating } = req.body;
   const file = req.file;
 
@@ -19,17 +20,17 @@ const createBook = async (req, res: Response) => {
   let dbNewGenres: Genre[] = [];
 
   if (genres) {
-    const arrayGeners = genres.split(', ');
+    const arrayGenres = genres.split(', ');
 
     dbGenres = await genreRepository.find({
-      where: { name: In(arrayGeners) },
+      where: { name: In(arrayGenres) },
     })
 
     const dbNameGenres = dbGenres.map((genre) => {
       return genre.name
     })
 
-    const newGenres = arrayGeners.filter((genre) => {
+    const newGenres = arrayGenres.filter((genre) => {
       return !dbNameGenres.includes(genre)
     })
 
@@ -68,21 +69,19 @@ const createBook = async (req, res: Response) => {
   return res.status(201).json(book);
 };
 
-const getBooks = async (req, res: Response) => {
-  let page = req.query.page || 1;
-  const limit = req.query.limit || 4;
+const getBooks: AppRequestHandler = async (req, res) => {
+  let page = req.validatedQuery.page || 1;
+  const limit = req.validatedQuery.limit || 4;
 
-  const filterBy = req.query.filter || 'id';
+  const filterBy = req.validatedQuery.filter || 'id';
 
-  const genres = req.query.genres || null;
-
-  console.log(typeof genres)
+  const genres = req.validatedQuery.genres;
 
   const where: any = {};
 
   where.price = Between(
-    req.query.minPrice || 0,
-    req.query.maxPrice || Infinity
+    req.validatedQuery.minPrice || 0,
+    req.validatedQuery.maxPrice || Infinity
   );
 
 
@@ -90,16 +89,11 @@ const getBooks = async (req, res: Response) => {
 
   const allGenres = await genreRepository.find();
 
-  const arrayGenres = allGenres.map((item) => {
-    return { id: item.id, genre: item.name }
-  })
-
-  // if (genres.length) {
-  //   console.log(genres)
-  //   where.genres = {
-  //    name: In(genres)
-  //   }
-  // }
+  if (genres?.length) {
+    where.genres = {
+     name: In(genres),
+    }
+  }
 
   const [books, total] = await bookRepository.findAndCount({
     relations: {
@@ -120,7 +114,7 @@ const getBooks = async (req, res: Response) => {
 
   const totalPages = Math.ceil(total / limit);
 
-  res.status(200).json({ books: result, totalPages, genres: arrayGenres })
+  res.status(200).json({ books: result, totalPages, genres: allGenres })
 
   // const books = await bookRepository.find();
   //

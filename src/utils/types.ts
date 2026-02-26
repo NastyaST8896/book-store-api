@@ -1,10 +1,6 @@
 import { ParamsDictionary } from 'express-serve-static-core';
-import { Request } from 'express';
-import core from 'express-serve-static-core';
+import { Request, RequestHandler } from 'express';
 
-export type AppRequest<ReqBody = any, ResBody = any> = Request<ParamsDictionary, ResBody, ReqBody> & {
-  user: {
-    id: number;
-    email: string;
-  }
-};
+export type AppRequest<ReqBody = any, ResBody = any> = Request<ParamsDictionary, ResBody, ReqBody>;
+
+export type AppRequestHandler<ReqBody = any, ResBody = any> = RequestHandler<ParamsDictionary, ResBody, ReqBody>

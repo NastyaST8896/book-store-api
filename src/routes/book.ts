@@ -2,7 +2,7 @@ import multer from 'multer';
 import path from 'node:path';
 import { Router } from 'express';
 import bookController from '../controllers/book';
-import schemaValidator from '../schemaValidator';
+import { schemaQueryValidator } from '../schema-query-validator';
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -28,5 +28,5 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage: storage, fileFilter: fileFilter });
 
 export const bookRouter = Router()
-  .get('/', schemaValidator('get-books'), bookController.getBooks)
+  .get('/', schemaQueryValidator('get-books'), bookController.getBooks)
   .post('/create-book', upload.single('cover'), bookController.createBook);

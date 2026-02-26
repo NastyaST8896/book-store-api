@@ -1,5 +1,4 @@
-import { Response } from 'express';
-import { AppRequest } from '../utils/types';
+import { AppRequestHandler } from '../utils/types';
 import { AppError } from '../utils/app-error';
 import { mediaRepository } from '../db/repositories/repository';
 import { userRepository } from '../db/repositories/repository';
@@ -8,7 +7,7 @@ import { validatePassword } from '../utils/validations';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const getUser = async (req, res: Response) => {
+const getUser: AppRequestHandler = async (req, res) => {
   const user = await userRepository.findOne({
     where: { email: req.user.email },
     relations: ['media']
@@ -25,7 +24,7 @@ const getUser = async (req, res: Response) => {
   });
 };
 
-const changeUserName = async (req: AppRequest, res: Response) => {
+const changeUserName: AppRequestHandler = async (req, res) => {
   const { fullName } = req.body;
 
   if (!fullName) {
@@ -43,7 +42,7 @@ const changeUserName = async (req: AppRequest, res: Response) => {
   res.status(200).json({ fullName: user.fullName, email: user.email });
 };
 
-const changeUserPassword = async (req: AppRequest, res: Response) => {
+const changeUserPassword: AppRequestHandler = async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
   if (!oldPassword || !newPassword) {
@@ -69,7 +68,7 @@ const changeUserPassword = async (req: AppRequest, res: Response) => {
   res.status(200).json({ status: 'ok' });
 };
 
-const changeUserAvatar = async (req, res) => {
+const changeUserAvatar: AppRequestHandler = async (req, res) => {
   const avatar = req.file;
 
   if (!avatar) {
