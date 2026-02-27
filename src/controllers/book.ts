@@ -1,11 +1,9 @@
-import { Response } from 'express';
 import { bookRepository, genreRepository } from '../db/repositories/repository';
 import { Book } from '../db/entities/book';
 import { Genre } from '../db/entities/genre';
 
 import { Media } from '../db/entities/media';
 import { Between, In } from 'typeorm';
-import { AppDataSource } from '../config/database';
 import { AppRequestHandler } from '../utils/types';
 
 const createBook: AppRequestHandler = async (req, res) => {
@@ -70,11 +68,9 @@ const createBook: AppRequestHandler = async (req, res) => {
 };
 
 const getBooks: AppRequestHandler = async (req, res) => {
-  let page = req.validatedQuery.page || 1;
-  const limit = req.validatedQuery.limit || 4;
-
+  const page = req.validatedQuery.page || 1;
+  const limit = req.validatedQuery.limit || 8;
   const filterBy = req.validatedQuery.filter || 'id';
-
   const genres = req.validatedQuery.genres;
 
   const where: any = {};
@@ -83,7 +79,10 @@ const getBooks: AppRequestHandler = async (req, res) => {
     req.validatedQuery.minPrice || 0,
     req.validatedQuery.maxPrice || Infinity
   );
+  console.log('=========');
 
+  const maxPrice = await bookRepository.maximum('price');
+  const minPrice = await bookRepository.minimum('price');
 
   const skip = (page - 1) * limit;
 
@@ -101,10 +100,10 @@ const getBooks: AppRequestHandler = async (req, res) => {
     },
     skip,
     take: limit,
+    where,
     order: {
       [filterBy]: 'asc',
     },
-    where,
   });
 
   const result = books.map((book: Book) => ({
@@ -114,7 +113,14 @@ const getBooks: AppRequestHandler = async (req, res) => {
 
   const totalPages = Math.ceil(total / limit);
 
-  res.status(200).json({ books: result, totalPages, genres: allGenres })
+  console.log('=========++++');
+  return res.status(200).json({ 
+    books: result, 
+    totalPages, 
+    genres: allGenres,
+    maxPrice,
+    minPrice,
+  });
 
   // const books = await bookRepository.find();
   //

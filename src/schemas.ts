@@ -4,8 +4,8 @@ const getBooks = Joi.object().keys({
   page: Joi.number().integer(),
   limit: Joi.number().integer(),
   filter: Joi.string(),
-  maxPrice: Joi.number().integer(),
-  minPrice: Joi.number().integer(),
+  maxPrice: Joi.number(),
+  minPrice: Joi.number(),
   genres: Joi.alternatives().try(
     Joi.array().items(Joi.string()),
     Joi.string().custom((value) => {
