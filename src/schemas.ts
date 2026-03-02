@@ -3,7 +3,26 @@ import Joi, { ObjectSchema } from 'joi';
 const getBooks = Joi.object().keys({
   page: Joi.number().integer(),
   limit: Joi.number().integer(),
-  filter: Joi.string(),
+  sortBy: Joi.string().custom((value) => {
+
+    switch (value) {
+      case 'Price':
+        return 'price'
+        break;
+      case 'Name':
+        return 'title'
+        break;
+      case 'Author name':
+        return 'author'
+        break;
+      case 'Rating':
+        return 'rating'
+        break;
+      case 'Date of issue':
+        return 'releaseDate'
+        break;
+    }
+  }),
   maxPrice: Joi.number(),
   minPrice: Joi.number(),
   genres: Joi.alternatives().try(

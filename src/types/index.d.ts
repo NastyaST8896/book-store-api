@@ -6,7 +6,7 @@ declare global {
       validatedQuery?: {
         page?: number;
         limit?: number;
-        filter?: string;
+        sortBy?: string;
         maxPrice?: number;
         minPrice?: number;
         genres?: string[];

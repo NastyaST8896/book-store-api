@@ -70,8 +70,10 @@ const createBook: AppRequestHandler = async (req, res) => {
 const getBooks: AppRequestHandler = async (req, res) => {
   const page = req.validatedQuery.page || 1;
   const limit = req.validatedQuery.limit || 8;
-  const filterBy = req.validatedQuery.filter || 'id';
+  const sortBy = req.validatedQuery.sortBy || 'id';
   const genres = req.validatedQuery.genres;
+
+  console.log(sortBy)
 
   const where: any = {};
 
@@ -81,8 +83,11 @@ const getBooks: AppRequestHandler = async (req, res) => {
   );
   console.log('=========');
 
-  const maxPrice = await bookRepository.maximum('price');
-  const minPrice = await bookRepository.minimum('price');
+  const range = await bookRepository
+    .createQueryBuilder('books')
+    .select('MIN(books.price)', 'minPrice')
+    .addSelect('MAX(books.price)', 'maxPrice')
+    .getRawOne();
 
   const skip = (page - 1) * limit;
 
@@ -90,7 +95,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
 
   if (genres?.length) {
     where.genres = {
-     name: In(genres),
+      name: In(genres),
     }
   }
 
@@ -102,7 +107,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
     take: limit,
     where,
     order: {
-      [filterBy]: 'asc',
+      [sortBy]: 'asc',
     },
   });
 
@@ -114,12 +119,12 @@ const getBooks: AppRequestHandler = async (req, res) => {
   const totalPages = Math.ceil(total / limit);
 
   console.log('=========++++');
-  return res.status(200).json({ 
-    books: result, 
-    totalPages, 
+  return res.status(200).json({
+    books: result,
+    totalPages,
     genres: allGenres,
-    maxPrice,
-    minPrice,
+    maxPrice: +range.maxPrice,
+    minPrice: +range.minPrice,
   });
 
   // const books = await bookRepository.find();
