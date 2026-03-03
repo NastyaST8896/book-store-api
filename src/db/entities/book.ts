@@ -30,6 +30,9 @@ export class Book {
   @Column('float', { nullable: true })
   rating: number;
 
+  @Column('text', { nullable: true })
+  description: string;
+
   @OneToOne(() => Media, (image) => image.book, {
     cascade: true
   })

@@ -29,4 +29,5 @@ const upload = multer({ storage: storage, fileFilter: fileFilter });
 
 export const bookRouter = Router()
   .get('/', schemaQueryValidator('get-books'), bookController.getBooks)
-  .post('/create-book', upload.single('cover'), bookController.createBook);
+  .post('/create-book', upload.single('cover'), bookController.createBook)
+  .get('/:id', bookController.getBook);

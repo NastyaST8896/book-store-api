@@ -148,4 +148,21 @@ const getBooks: AppRequestHandler = async (req, res) => {
   // });
 };
 
-export default { createBook, getBooks };
+const getBook: AppRequestHandler = async (req, res) => {
+  const book = await bookRepository.findOne({ 
+    relations: { media: true },
+    where: { id: +req.params.id }
+  })
+
+  res.status(200).json({
+    id: book.id,
+    title: book.title,
+    author: book.author,
+    price: book.price,
+    rating: book.rating,
+    media: book.media.filePath,
+    description: book.description,
+  });
+};
+
+export default { createBook, getBooks, getBook };
