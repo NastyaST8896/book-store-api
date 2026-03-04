@@ -11,6 +11,7 @@ import { RefreshToken } from './refresh-token';
 import { Media } from './media';
 import jwt from 'jsonwebtoken';
 import { Book } from './book';
+import { BooksRating } from './books-rating';
 
 @Entity()
 export class User {
@@ -36,6 +37,9 @@ export class User {
   @ManyToMany(() => Book, (book) => book.likedBy)
   @JoinTable({ name: "user_book_likes" })
   likedBooks: Book[];
+
+  @OneToMany(() => BooksRating, (booksRating) => booksRating.user)
+    booksRating: BooksRating[];
 
   generateToken() {
     return jwt.sign(

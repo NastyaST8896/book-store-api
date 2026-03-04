@@ -1,9 +1,9 @@
-import { bookRepository, genreRepository } from '../db/repositories/repository';
+import { bookRepository, genreRepository, ratingRepository } from '../db/repositories/repository';
 import { Book } from '../db/entities/book';
 import { Genre } from '../db/entities/genre';
 
 import { Media } from '../db/entities/media';
-import { Between, In } from 'typeorm';
+import { Between, In, Not } from 'typeorm';
 import { AppRequestHandler } from '../utils/types';
 
 const createBook: AppRequestHandler = async (req, res) => {
@@ -73,15 +73,12 @@ const getBooks: AppRequestHandler = async (req, res) => {
   const sortBy = req.validatedQuery.sortBy || 'id';
   const genres = req.validatedQuery.genres;
 
-  console.log(sortBy)
-
   const where: any = {};
 
   where.price = Between(
     req.validatedQuery.minPrice || 0,
     req.validatedQuery.maxPrice || Infinity
   );
-  console.log('=========');
 
   const range = await bookRepository
     .createQueryBuilder('books')
@@ -102,6 +99,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
   const [books, total] = await bookRepository.findAndCount({
     relations: {
       media: true,
+      booksRating: true,
     },
     skip,
     take: limit,
@@ -111,14 +109,46 @@ const getBooks: AppRequestHandler = async (req, res) => {
     },
   });
 
+  const getAverageRating = (booksRating) => {
+
+    if (booksRating.length) {
+      const rating = booksRating
+        .map((item) => {
+          return item.rating
+        });
+
+      const ratingFinal = rating.reduce((accum, item) => accum + item, 0) / rating.length;
+      return ratingFinal.toFixed(1);
+    } else {
+      return '0.0';
+    }
+  }
+  // const booksRating = await ratingRepository.find({
+  //   where: { bookId: +req.params.id }
+  // });
+
+  // let ratingBook: string;
+
+  // if(bookRating.length) {
+  //   const rating = bookRating
+  //   .map((item) => {
+  //     return item.rating
+  //   });
+
+  //   const ratingFinal = rating.reduce((accum, item) => accum + item, 0) / rating.length;
+  //   ratingBook = ratingFinal.toFixed(1);
+  // } else {
+  //   ratingBook = '0.0';
+  // }
+
   const result = books.map((book: Book) => ({
     ...book,
-    media: book.media.filePath
+    media: book.media.filePath,
+    booksRating: getAverageRating(book.booksRating) 
   }));
 
   const totalPages = Math.ceil(total / limit);
 
-  console.log('=========++++');
   return res.status(200).json({
     books: result,
     totalPages,
@@ -149,20 +179,73 @@ const getBooks: AppRequestHandler = async (req, res) => {
 };
 
 const getBook: AppRequestHandler = async (req, res) => {
-  const book = await bookRepository.findOne({ 
+  const book = await bookRepository.findOne({
     relations: { media: true },
     where: { id: +req.params.id }
-  })
+  });
+
+  const bookRating = await ratingRepository.find({
+    where: { bookId: +req.params.id }
+  });
+
+  let ratingBook: string;
+
+  if (bookRating.length) {
+    const rating = bookRating
+      .map((item) => {
+        return item.rating
+      });
+
+    const ratingFinal = rating.reduce((accum, item) => accum + item, 0) / rating.length;
+    ratingBook = ratingFinal.toFixed(1);
+  } else {
+    ratingBook = '0.0';
+  }
+
+  const recommendedBooks = await bookRepository.find({
+    relations: { media: true },
+    where: { id: Not(+req.params.id) },
+    take: 4
+  });
+
+  const result = recommendedBooks.map((book: Book) => ({
+    id: book.id,
+    title: book.title,
+    author: book.author,
+    price: book.price,
+    rating: book.rating,
+    media: book.media.filePath
+  }));
 
   res.status(200).json({
     id: book.id,
     title: book.title,
     author: book.author,
     price: book.price,
-    rating: book.rating,
+    rating: ratingBook,
     media: book.media.filePath,
     description: book.description,
+    recommended: result,
   });
 };
 
+// const getRecommendedBooks: AppRequestHandler = async (req, res) => {
+
+//   const recommendedBooks = await bookRepository.find({
+//     relations: { media: true },
+//     where: { id: Not(+req.params.id) },
+//     take: 4
+//   });
+
+//   const result = recommendedBooks.map((book: Book) => ({
+//     id: book.id,
+//     title: book.title,
+//     author: book.author,
+//     price: book.price,
+//     rating: book.rating,
+//     media: book.media.filePath
+//   }));
+
+//   res.status(200).json({ result });
+// };
 export default { createBook, getBooks, getBook };

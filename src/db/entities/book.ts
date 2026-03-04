@@ -5,17 +5,19 @@ import {
   OneToOne,
   JoinColumn, ManyToMany,
   JoinTable,
+  OneToMany,
 } from 'typeorm';
 import { Media } from './media';
 import { User } from './user';
 import { Genre } from './genre';
+import { BooksRating } from './books-rating';
 
 @Entity()
 export class Book {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: true })
   title: string;
 
   @Column()
@@ -46,4 +48,7 @@ export class Book {
   @ManyToMany(() => Genre, (genre) => genre.books)
   @JoinTable()
   genres:Genre[];
+
+  @OneToMany(() => BooksRating, (booksRating) => booksRating.book)
+  booksRating: BooksRating[];
 }
