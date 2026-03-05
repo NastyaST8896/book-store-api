@@ -1,10 +1,15 @@
-import { bookRepository, genreRepository, ratingRepository } from '../db/repositories/repository';
+import {
+  bookRepository,
+  genreRepository,
+  ratingRepository
+} from '../db/repositories/repository';
 import { Book } from '../db/entities/book';
 import { Genre } from '../db/entities/genre';
 
 import { Media } from '../db/entities/media';
 import { Between, In, Not } from 'typeorm';
 import { AppRequestHandler } from '../utils/types';
+import { BooksRating } from 'src/db/entities/books-rating';
 
 const createBook: AppRequestHandler = async (req, res) => {
   const { title, author, releaseDate, genres, price, rating } = req.body;
@@ -75,20 +80,14 @@ const getBooks: AppRequestHandler = async (req, res) => {
 
   const where: any = {};
 
-  where.price = Between(
-    req.validatedQuery.minPrice || 0,
-    req.validatedQuery.maxPrice || Infinity
-  );
+  where.price = Between(0, req.validatedQuery.maxPrice || Infinity);
 
   const range = await bookRepository
     .createQueryBuilder('books')
-    .select('MIN(books.price)', 'minPrice')
-    .addSelect('MAX(books.price)', 'maxPrice')
+    .select('MAX(books.price)', 'maxPrice')
     .getRawOne();
 
   const skip = (page - 1) * limit;
-
-  const allGenres = await genreRepository.find();
 
   if (genres?.length) {
     where.genres = {
@@ -109,7 +108,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
     },
   });
 
-  const getAverageRating = (booksRating) => {
+  const getAverageRating = (booksRating: BooksRating[]): string => {
 
     if (booksRating.length) {
       const rating = booksRating
@@ -117,44 +116,59 @@ const getBooks: AppRequestHandler = async (req, res) => {
           return item.rating
         });
 
-      const ratingFinal = rating.reduce((accum, item) => accum + item, 0) / rating.length;
+      const ratingFinal = rating
+        .reduce(
+          (accum: number, item: number) => accum + item, 0
+        ) / rating.length;
       return ratingFinal.toFixed(1);
     } else {
       return '0.0';
     }
   }
-  // const booksRating = await ratingRepository.find({
-  //   where: { bookId: +req.params.id }
-  // });
-
-  // let ratingBook: string;
-
-  // if(bookRating.length) {
-  //   const rating = bookRating
-  //   .map((item) => {
-  //     return item.rating
-  //   });
-
-  //   const ratingFinal = rating.reduce((accum, item) => accum + item, 0) / rating.length;
-  //   ratingBook = ratingFinal.toFixed(1);
-  // } else {
-  //   ratingBook = '0.0';
-  // }
 
   const result = books.map((book: Book) => ({
     ...book,
     media: book.media.filePath,
-    booksRating: getAverageRating(book.booksRating) 
+    booksRating: getAverageRating(book.booksRating)
   }));
 
   const totalPages = Math.ceil(total / limit);
 
+  const nextPage = (totalPages: number, page: number): number => {
+    const next = page + 1
+
+    if (next > totalPages) {
+      return null;
+    }
+
+    return next;
+  }
+
+  const prevPage = (page: number): number => {
+    const next = page - 1
+
+    if (next <= 0) {
+      return null;
+    }
+
+    return next;
+  }
+
   return res.status(200).json({
-    books: result,
-    totalPages,
-    genres: allGenres,
-    maxPrice: +range.maxPrice,
-    minPrice: +range.minPrice,
+    data: {
+      books: result,
+    },
+    meta: {
+      pagination: {
+        perPage: limit,
+        currentPage: page,
+        nextPage: nextPage(totalPages, page),
+        prevPage: prevPage(page),
+        totalPages,
+        totalAmount: total
+      }
+      // maxPrice: +range.maxPrice,
+    }
   });
 
   // const books = await bookRepository.find();
@@ -178,6 +192,25 @@ const getBooks: AppRequestHandler = async (req, res) => {
   // });
 };
 
+const getAllGenres: AppRequestHandler = async (_, res) => {
+  const allGenres = await genreRepository.find();
+  const data = {
+    data: { allGenres }
+  }
+  return res.status(200).json(data);
+};
+
+const getMaxPrice: AppRequestHandler = async (_, res) => {
+  const price = await bookRepository
+    .createQueryBuilder('books')
+    .select('MAX(books.price)', 'max')
+    .getRawOne();
+  const data = {
+    data: { maxPrice: price.max }
+  }
+  return res.status(200).json(data);
+};
+
 const getBook: AppRequestHandler = async (req, res) => {
   const book = await bookRepository.findOne({
     relations: { media: true },
@@ -196,7 +229,9 @@ const getBook: AppRequestHandler = async (req, res) => {
         return item.rating
       });
 
-    const ratingFinal = rating.reduce((accum, item) => accum + item, 0) / rating.length;
+    const ratingFinal = rating
+      .reduce(
+        (accum, item) => accum + item, 0) / rating.length;
     ratingBook = ratingFinal.toFixed(1);
   } else {
     ratingBook = '0.0';
@@ -248,4 +283,4 @@ const getBook: AppRequestHandler = async (req, res) => {
 
 //   res.status(200).json({ result });
 // };
-export default { createBook, getBooks, getBook };
+export default { createBook, getBooks, getBook, getAllGenres, getMaxPrice };
