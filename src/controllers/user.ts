@@ -18,9 +18,13 @@ const getUser: AppRequestHandler = async (req, res) => {
   }
 
   res.status(200).json({
-    fullName: user.fullName,
-    email: user.email,
-    avatar: user.media?.filePath || null
+    data: {
+      user: {
+        fullName: user.fullName,
+        email: user.email,
+        avatar: user.media?.filePath || null
+      }
+    }
   });
 };
 
@@ -39,7 +43,14 @@ const changeUserName: AppRequestHandler = async (req, res) => {
 
   await userRepository.save(user);
 
-  res.status(200).json({ fullName: user.fullName, email: user.email });
+  res.status(200).json({
+    data: {
+      user: {
+        fullName: user.fullName,
+        email: user.email,
+      }
+    }
+  });
 };
 
 const changeUserPassword: AppRequestHandler = async (req, res) => {
@@ -65,7 +76,7 @@ const changeUserPassword: AppRequestHandler = async (req, res) => {
 
   await userRepository.save(user);
 
-  res.status(200).json({ status: 'ok' });
+  res.status(200).json({ data: {status: 'ok'} });
 };
 
 const changeUserAvatar: AppRequestHandler = async (req, res) => {
@@ -95,7 +106,7 @@ const changeUserAvatar: AppRequestHandler = async (req, res) => {
 
   await userRepository.save(user);
 
-  if(prevMediaId) {
+  if (prevMediaId) {
     await mediaRepository.delete(prevMediaId);
 
     const filePath = path.join(__dirname, '../../uploads/', prevMediaName);
@@ -110,7 +121,7 @@ const changeUserAvatar: AppRequestHandler = async (req, res) => {
     });
   }
 
-  res.status(200).json({ avatar: user.media.filePath });
+  res.status(200).json({data: { avatar: user.media.filePath }});
 };
 
 export default {

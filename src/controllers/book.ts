@@ -78,20 +78,17 @@ const getBooks: AppRequestHandler = async (req, res) => {
   const sortBy = req.validatedQuery.sortBy || 'id';
   const genres = req.validatedQuery.genres;
 
+  console.log('req.validatedQuery', req.validatedQuery);
+
   const where: any = {};
 
   where.price = Between(0, req.validatedQuery.maxPrice || Infinity);
-
-  const range = await bookRepository
-    .createQueryBuilder('books')
-    .select('MAX(books.price)', 'maxPrice')
-    .getRawOne();
 
   const skip = (page - 1) * limit;
 
   if (genres?.length) {
     where.genres = {
-      name: In(genres),
+      id: In(genres),
     }
   }
 
@@ -253,14 +250,18 @@ const getBook: AppRequestHandler = async (req, res) => {
   }));
 
   res.status(200).json({
-    id: book.id,
-    title: book.title,
-    author: book.author,
-    price: book.price,
-    rating: ratingBook,
-    media: book.media.filePath,
-    description: book.description,
-    recommended: result,
+    data: {
+      book: {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        price: book.price,
+        rating: ratingBook,
+        media: book.media.filePath,
+        description: book.description,
+      },
+      recommended: result,
+    }
   });
 };
 

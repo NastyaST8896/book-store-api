@@ -6,19 +6,19 @@ const getBooks = Joi.object().keys({
   sortBy: Joi.string().custom((value) => {
 
     switch (value) {
-      case 'Price':
+      case '1':
         return 'price'
         break;
-      case 'Name':
+      case '2':
         return 'title'
         break;
-      case 'Author name':
+      case '3':
         return 'author'
         break;
-      case 'Rating':
+      case '4':
         return 'rating'
         break;
-      case 'Date of issue':
+      case '5':
         return 'releaseDate'
         break;
     }
@@ -28,7 +28,9 @@ const getBooks = Joi.object().keys({
   genres: Joi.alternatives().try(
     Joi.array().items(Joi.string()),
     Joi.string().custom((value) => {
-      return value.split(',').map((item) => item.trim());
+      return value.split(',')
+        .map((item: string) => item.trim())
+        .map((item: string) => Number(item));
     })
   )
 });

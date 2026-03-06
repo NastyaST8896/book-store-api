@@ -9,6 +9,7 @@ import { AppRequest } from '../utils/types';
 import { validateEmail, validatePassword } from '../utils/validations';
 import { checkIsEmailAvailable } from '../utils/helpers';
 import { AppError } from '../utils/app-error';
+import { date } from 'joi';
 
 
 
@@ -34,7 +35,14 @@ const registerUser = async (req: AppRequest<UserType>, res: Response) => {
 
   await userRepository.manager.save(user);
 
-  return res.status(201).json(user);
+  return res.status(201).json({
+    data: {
+      user: {
+        id: user.id,
+        email: user.email,
+      }
+    }
+  });
 };
 
 const authorizeUser = async (req: AppRequest<UserType>, res: Response) => {
@@ -75,9 +83,15 @@ const authorizeUser = async (req: AppRequest<UserType>, res: Response) => {
   await refreshTokenRepository.save(refreshToken);
 
   return res.status(200).json({
-    user: { fullName: user.fullName, email: user.email },
-    accessToken,
-    refreshToken: refreshToken.token,
+    data: {
+      user: {
+        fullName: user.fullName,
+        email: user.email,
+        avatar: user.media?.filePath || "",
+      },
+      accessToken,
+      refreshToken: refreshToken.token,
+    }
   });
 };
 
@@ -122,7 +136,14 @@ const checkAuthUser: RequestHandler = async (req: AppRequest, res: Response) => 
     throw new AppError('Something went wrong', 500);
   }
 
-  res.status(200).json({ fullName: user.fullName, email: user.email });
+  res.status(200).json({
+    data: {
+      user: {
+        fullName: user.fullName,
+        email: user.email
+      }
+    }
+  });
 };
 
 export default {
