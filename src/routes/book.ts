@@ -32,5 +32,6 @@ export const bookRouter = Router()
   .post('/create-book', upload.single('cover'), bookController.createBook)
   .get('/genres', bookController.getAllGenres)
   .get('/maxPrice', bookController.getMaxPrice)
-  .get('/:id', bookController.getBook);
+  .get('/:id', bookController.getBook)
+  .post('/rating', bookController.setBookRating);
   

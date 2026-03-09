@@ -85,6 +85,7 @@ const authorizeUser = async (req: AppRequest<UserType>, res: Response) => {
   return res.status(200).json({
     data: {
       user: {
+        id: user.id,
         fullName: user.fullName,
         email: user.email,
         avatar: user.media?.filePath || "",
@@ -139,6 +140,7 @@ const checkAuthUser: RequestHandler = async (req: AppRequest, res: Response) => 
   res.status(200).json({
     data: {
       user: {
+        id: user.id,
         fullName: user.fullName,
         email: user.email
       }

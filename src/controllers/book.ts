@@ -1,7 +1,7 @@
 import {
   bookRepository,
   genreRepository,
-  ratingRepository
+  ratingRepository, userRepository
 } from '../db/repositories/repository';
 import { Book } from '../db/entities/book';
 import { Genre } from '../db/entities/genre';
@@ -9,7 +9,7 @@ import { Genre } from '../db/entities/genre';
 import { Media } from '../db/entities/media';
 import { Between, In, Not } from 'typeorm';
 import { AppRequestHandler } from '../utils/types';
-import { BooksRating } from 'src/db/entities/books-rating';
+import { BooksRating } from '../db/entities/books-rating';
 
 const createBook: AppRequestHandler = async (req, res) => {
   const { title, author, releaseDate, genres, price, rating } = req.body;
@@ -78,11 +78,9 @@ const getBooks: AppRequestHandler = async (req, res) => {
   const sortBy = req.validatedQuery.sortBy || 'id';
   const genres = req.validatedQuery.genres;
 
-  console.log('req.validatedQuery', req.validatedQuery);
-
   const where: any = {};
 
-  where.price = Between(0, req.validatedQuery.maxPrice || Infinity);
+  where.price = Between(req.validatedQuery.minPrice || 0, req.validatedQuery.maxPrice || Infinity);
 
   const skip = (page - 1) * limit;
 
@@ -265,23 +263,24 @@ const getBook: AppRequestHandler = async (req, res) => {
   });
 };
 
-// const getRecommendedBooks: AppRequestHandler = async (req, res) => {
+const setBookRating = async (req, res) => {
+  const book = await bookRepository.findOne({
+    where: { id: +req.body.bookId }
+  });
 
-//   const recommendedBooks = await bookRepository.find({
-//     relations: { media: true },
-//     where: { id: Not(+req.params.id) },
-//     take: 4
-//   });
+  const user = await userRepository.findOne({
+    where: { id: +req.body.userId }
+  })
 
-//   const result = recommendedBooks.map((book: Book) => ({
-//     id: book.id,
-//     title: book.title,
-//     author: book.author,
-//     price: book.price,
-//     rating: book.rating,
-//     media: book.media.filePath
-//   }));
+  if(book && user) {
+    const bookRating = new BooksRating();
+    bookRating.bookId = book.id;
+    bookRating.userId = user.id;
+    bookRating.rating = req.body.rating;
 
-//   res.status(200).json({ result });
-// };
-export default { createBook, getBooks, getBook, getAllGenres, getMaxPrice };
+    await ratingRepository.save(bookRating);
+
+    return res.status(200).send();
+  }
+}
+export default { createBook, getBooks, getBook, getAllGenres, getMaxPrice, setBookRating };
