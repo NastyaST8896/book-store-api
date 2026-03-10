@@ -11,9 +11,6 @@ import { Book } from "./book";
 
 @Entity()
 export class BooksRating {
-  @PrimaryGeneratedColumn()
-  id: number;
-
   @ManyToOne(() => User, (user) => user.booksRating)
   @JoinColumn({ name: 'userId' })
   user: User

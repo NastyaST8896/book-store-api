@@ -17,7 +17,7 @@ const getAverageRating = (booksRating: BooksRating[]): string => {
   if (booksRating.length) {
     const rating = booksRating
       .map((item) => {
-        return item.rating
+        return item.rating;
       });
 
     const ratingFinal = rating
@@ -28,7 +28,7 @@ const getAverageRating = (booksRating: BooksRating[]): string => {
   } else {
     return '0.0';
   }
-}
+};
 
 const createBook: AppRequestHandler = async (req, res) => {
   const { title, author, releaseDate, genres, price, rating } = req.body;
@@ -46,15 +46,15 @@ const createBook: AppRequestHandler = async (req, res) => {
 
     dbGenres = await genreRepository.find({
       where: { name: In(arrayGenres) },
-    })
+    });
 
     const dbNameGenres = dbGenres.map((genre) => {
-      return genre.name
-    })
+      return genre.name;
+    });
 
     const newGenres = arrayGenres.filter((genre) => {
-      return !dbNameGenres.includes(genre)
-    })
+      return !dbNameGenres.includes(genre);
+    });
 
     const addGenres = newGenres.map((name: string) => {
       const genre = new Genre();
@@ -66,7 +66,7 @@ const createBook: AppRequestHandler = async (req, res) => {
 
     dbNewGenres = await genreRepository.find({
       where: { name: In(newGenres) }
-    })
+    });
   }
 
 
@@ -84,7 +84,7 @@ const createBook: AppRequestHandler = async (req, res) => {
   book.price = price;
   book.rating = rating;
   book.media = media;
-  book.genres = [...dbGenres, ...dbNewGenres]
+  book.genres = [...dbGenres, ...dbNewGenres];
 
   await bookRepository.save(book);
 
@@ -109,7 +109,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
   if (genres?.length) {
     where.genres = {
       id: In(genres),
-    }
+    };
   }
 
   const [books, total] = await bookRepository.findAndCount({
@@ -134,24 +134,24 @@ const getBooks: AppRequestHandler = async (req, res) => {
   const totalPages = Math.ceil(total / limit);
 
   const nextPage = (totalPages: number, page: number): number => {
-    const next = page + 1
+    const next = page + 1;
 
     if (next > totalPages) {
       return null;
     }
 
     return next;
-  }
+  };
 
   const prevPage = (page: number): number => {
-    const next = page - 1
+    const next = page - 1;
 
     if (next <= 0) {
       return null;
     }
 
     return next;
-  }
+  };
 
   return res.json({
     data: {
@@ -195,7 +195,7 @@ const getAllGenres: AppRequestHandler = async (_, res) => {
   const allGenres = await genreRepository.find();
   const data = {
     data: { allGenres }
-  }
+  };
   return res.json(data);
 };
 
@@ -206,7 +206,7 @@ const getMaxPrice: AppRequestHandler = async (_, res) => {
     .getRawOne();
   const data = {
     data: { maxPrice: price.max }
-  }
+  };
   return res.json(data);
 };
 
@@ -270,88 +270,32 @@ const getBook: AppRequestHandler = async (req, res) => {
   });
 };
 
-const setBookRating:AppRequestHandler = async (req, res) => {
+const setBookRating: AppRequestHandler = async (req, res) => {
   const book = await bookRepository.findOne({
     where: { id: +req.body.bookId }
   });
 
-  if(!book) {
-    throw new Error(`Book width id: ${req.body.bookId} not found`)
+  if (!book) {
+    throw new Error(`Book width id: ${req.body.bookId} not found`);
   }
 
-  const user = await userRepository.findOne({
-    where: { id: +req.body.userId }
-  })
+  const bookRating = new BooksRating();
+  bookRating.bookId = book.id;
+  bookRating.userId = +req.body.userId;
+  bookRating.rating = req.body.rating;
 
-  const test = await ratingRepository.findOne({
-    where: {
-      userId: +req.body.userId,
-      bookId: +req.body.bookId
+  await ratingRepository.save(bookRating);
+
+  const ratingBook = await ratingRepository.find({
+    where: { bookId: +req.body.bookId }
+  });
+
+  return res.json({
+    data: {
+      booksRating: getAverageRating(ratingBook),
     }
-  })
-
-
-  if (book && user && test.rating !== req.body.rating) {
-    test.rating = req.body.rating;
-
-    await ratingRepository.save(test);
-
-    const ratingBook = await ratingRepository.find({
-      where: { bookId: +req.body.bookId }
-    });
-
-    return res.json({
-      data: {
-        booksRating: getAverageRating(ratingBook),
-      }
-    })
-
-  } else if (book && user && !test) {
-    const bookRating = new BooksRating();
-    bookRating.bookId = book.id;
-    bookRating.userId = user.id;
-    bookRating.rating = req.body.rating;
-
-    await ratingRepository.save(bookRating);
-
-    const ratingBook = await ratingRepository.find({
-      where: { bookId: +req.body.bookId }
-    });
-
-    return res.json({
-      data: {
-        booksRating: getAverageRating(ratingBook),
-      }
-    })
-  } else if (test.rating === req.body.rating) {
-    const ratingBook = await ratingRepository.find({
-      where: { bookId: +req.body.bookId }
-    });
-
-    return res.json({
-      data: {
-        booksRating: getAverageRating(ratingBook),
-      }
-    })
-  }
-
-  // const bookRating = new BooksRating();
-  //   bookRating.bookId = book.id;
-  //   bookRating.userId = +req.body.userId;
-  //   bookRating.rating = req.body.rating;
-
-  //   await ratingRepository.save(bookRating);
-
-  //   const ratingBook = await ratingRepository.find({
-  //     where: { bookId: +req.body.bookId }
-  //   });
-
-  //   return res.json({
-  //     data: {
-  //       booksRating: getAverageRating(ratingBook),
-  //     }
-  //   })
-}
+  });
+};
 export default {
   createBook,
   getBooks,
