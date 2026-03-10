@@ -3,6 +3,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  PrimaryColumn,
   PrimaryGeneratedColumn
 } from "typeorm";
 import { User } from "./user";
@@ -17,14 +18,14 @@ export class BooksRating {
   @JoinColumn({ name: 'userId' })
   user: User
 
-  @Column()
+  @PrimaryColumn()
   userId: number;
 
   @ManyToOne(() => Book, (book) => book.booksRating)
   @JoinColumn({ name: 'bookId' })
   book: Book
 
-  @Column()
+  @PrimaryColumn()
   bookId: number;
 
   @Column('float', { nullable: true })

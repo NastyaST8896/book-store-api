@@ -82,7 +82,7 @@ const authorizeUser = async (req: AppRequest<UserType>, res: Response) => {
   });
   await refreshTokenRepository.save(refreshToken);
 
-  return res.status(200).json({
+  return res.json({
     data: {
       user: {
         id: user.id,
@@ -124,7 +124,7 @@ const refreshTokenUser = async (
   });
   await refreshTokenRepository.save(refreshToken);
 
-  return res.status(200).json({
+  return res.json({
     accessToken,
     refreshToken: refreshToken.token
   });
@@ -137,7 +137,7 @@ const checkAuthUser: RequestHandler = async (req: AppRequest, res: Response) => 
     throw new AppError('Something went wrong', 500);
   }
 
-  res.status(200).json({
+  res.json({
     data: {
       user: {
         id: user.id,

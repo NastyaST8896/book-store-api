@@ -10,6 +10,25 @@ import { Media } from '../db/entities/media';
 import { Between, In, Not } from 'typeorm';
 import { AppRequestHandler } from '../utils/types';
 import { BooksRating } from '../db/entities/books-rating';
+import { User } from 'src/db/entities/user';
+
+const getAverageRating = (booksRating: BooksRating[]): string => {
+
+  if (booksRating.length) {
+    const rating = booksRating
+      .map((item) => {
+        return item.rating
+      });
+
+    const ratingFinal = rating
+      .reduce(
+        (accum: number, item: number) => accum + item, 0
+      ) / rating.length;
+    return ratingFinal.toFixed(1);
+  } else {
+    return '0.0';
+  }
+}
 
 const createBook: AppRequestHandler = async (req, res) => {
   const { title, author, releaseDate, genres, price, rating } = req.body;
@@ -80,7 +99,10 @@ const getBooks: AppRequestHandler = async (req, res) => {
 
   const where: any = {};
 
-  where.price = Between(req.validatedQuery.minPrice || 0, req.validatedQuery.maxPrice || Infinity);
+  where.price = Between(
+    req.validatedQuery.minPrice || 0,
+    req.validatedQuery.maxPrice || Infinity
+  );
 
   const skip = (page - 1) * limit;
 
@@ -102,24 +124,6 @@ const getBooks: AppRequestHandler = async (req, res) => {
       [sortBy]: 'asc',
     },
   });
-
-  const getAverageRating = (booksRating: BooksRating[]): string => {
-
-    if (booksRating.length) {
-      const rating = booksRating
-        .map((item) => {
-          return item.rating
-        });
-
-      const ratingFinal = rating
-        .reduce(
-          (accum: number, item: number) => accum + item, 0
-        ) / rating.length;
-      return ratingFinal.toFixed(1);
-    } else {
-      return '0.0';
-    }
-  }
 
   const result = books.map((book: Book) => ({
     ...book,
@@ -149,7 +153,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
     return next;
   }
 
-  return res.status(200).json({
+  return res.json({
     data: {
       books: result,
     },
@@ -179,7 +183,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
   //
   // const likedSet = new Set(likedBookIds);
   //
-  // res.status(200).json({
+  // res.json({
   //   b: books.map(book => ({
   //     ...book,
   //     liked: likedSet.has(book.id)
@@ -192,7 +196,7 @@ const getAllGenres: AppRequestHandler = async (_, res) => {
   const data = {
     data: { allGenres }
   }
-  return res.status(200).json(data);
+  return res.json(data);
 };
 
 const getMaxPrice: AppRequestHandler = async (_, res) => {
@@ -203,37 +207,39 @@ const getMaxPrice: AppRequestHandler = async (_, res) => {
   const data = {
     data: { maxPrice: price.max }
   }
-  return res.status(200).json(data);
+  return res.json(data);
 };
 
 const getBook: AppRequestHandler = async (req, res) => {
   const book = await bookRepository.findOne({
-    relations: { media: true },
+    relations: { media: true, booksRating: true },
     where: { id: +req.params.id }
   });
+
+  let currentUserRating: number = 0.0;
+  if (req.query.userId) {
+    const user = await userRepository.findOne({
+
+      relations: { booksRating: true },
+      where: { id: +req.query.userId }
+    });
+
+    const userRating = await ratingRepository.findOne({
+      where: {
+        userId: user.id,
+        bookId: book.id,
+      }
+    });
+
+    currentUserRating = userRating?.rating;
+  }
 
   const bookRating = await ratingRepository.find({
     where: { bookId: +req.params.id }
   });
 
-  let ratingBook: string;
-
-  if (bookRating.length) {
-    const rating = bookRating
-      .map((item) => {
-        return item.rating
-      });
-
-    const ratingFinal = rating
-      .reduce(
-        (accum, item) => accum + item, 0) / rating.length;
-    ratingBook = ratingFinal.toFixed(1);
-  } else {
-    ratingBook = '0.0';
-  }
-
   const recommendedBooks = await bookRepository.find({
-    relations: { media: true },
+    relations: { media: true, booksRating: true },
     where: { id: Not(+req.params.id) },
     take: 4
   });
@@ -243,36 +249,64 @@ const getBook: AppRequestHandler = async (req, res) => {
     title: book.title,
     author: book.author,
     price: book.price,
-    rating: book.rating,
+    booksRating: getAverageRating(book.booksRating),
     media: book.media.filePath
   }));
 
-  res.status(200).json({
+  res.json({
     data: {
       book: {
         id: book.id,
         title: book.title,
         author: book.author,
         price: book.price,
-        rating: ratingBook,
+        booksRating: getAverageRating(bookRating),
         media: book.media.filePath,
         description: book.description,
+        userRating: currentUserRating,
       },
       recommended: result,
     }
   });
 };
 
-const setBookRating = async (req, res) => {
+const setBookRating:AppRequestHandler = async (req, res) => {
   const book = await bookRepository.findOne({
     where: { id: +req.body.bookId }
   });
+
+  if(!book) {
+    throw new Error(`Book width id: ${req.body.bookId} not found`)
+  }
 
   const user = await userRepository.findOne({
     where: { id: +req.body.userId }
   })
 
-  if(book && user) {
+  const test = await ratingRepository.findOne({
+    where: {
+      userId: +req.body.userId,
+      bookId: +req.body.bookId
+    }
+  })
+
+
+  if (book && user && test.rating !== req.body.rating) {
+    test.rating = req.body.rating;
+
+    await ratingRepository.save(test);
+
+    const ratingBook = await ratingRepository.find({
+      where: { bookId: +req.body.bookId }
+    });
+
+    return res.json({
+      data: {
+        booksRating: getAverageRating(ratingBook),
+      }
+    })
+
+  } else if (book && user && !test) {
     const bookRating = new BooksRating();
     bookRating.bookId = book.id;
     bookRating.userId = user.id;
@@ -280,7 +314,49 @@ const setBookRating = async (req, res) => {
 
     await ratingRepository.save(bookRating);
 
-    return res.status(200).send();
+    const ratingBook = await ratingRepository.find({
+      where: { bookId: +req.body.bookId }
+    });
+
+    return res.json({
+      data: {
+        booksRating: getAverageRating(ratingBook),
+      }
+    })
+  } else if (test.rating === req.body.rating) {
+    const ratingBook = await ratingRepository.find({
+      where: { bookId: +req.body.bookId }
+    });
+
+    return res.json({
+      data: {
+        booksRating: getAverageRating(ratingBook),
+      }
+    })
   }
+
+  // const bookRating = new BooksRating();
+  //   bookRating.bookId = book.id;
+  //   bookRating.userId = +req.body.userId;
+  //   bookRating.rating = req.body.rating;
+
+  //   await ratingRepository.save(bookRating);
+
+  //   const ratingBook = await ratingRepository.find({
+  //     where: { bookId: +req.body.bookId }
+  //   });
+
+  //   return res.json({
+  //     data: {
+  //       booksRating: getAverageRating(ratingBook),
+  //     }
+  //   })
 }
-export default { createBook, getBooks, getBook, getAllGenres, getMaxPrice, setBookRating };
+export default {
+  createBook,
+  getBooks,
+  getBook,
+  getAllGenres,
+  getMaxPrice,
+  setBookRating
+};

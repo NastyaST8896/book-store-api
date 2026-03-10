@@ -17,7 +17,7 @@ const getUser: AppRequestHandler = async (req, res) => {
     throw new AppError('Something went wrong', 500);
   }
 
-  res.status(200).json({
+  res.json({
     data: {
       user: {
         fullName: user.fullName,
@@ -43,7 +43,7 @@ const changeUserName: AppRequestHandler = async (req, res) => {
 
   await userRepository.save(user);
 
-  res.status(200).json({
+  res.json({
     data: {
       user: {
         fullName: user.fullName,
@@ -76,7 +76,7 @@ const changeUserPassword: AppRequestHandler = async (req, res) => {
 
   await userRepository.save(user);
 
-  res.status(200).json({ data: {status: 'ok'} });
+  res.json({ data: {status: 'ok'} });
 };
 
 const changeUserAvatar: AppRequestHandler = async (req, res) => {
@@ -121,7 +121,7 @@ const changeUserAvatar: AppRequestHandler = async (req, res) => {
     });
   }
 
-  res.status(200).json({data: { avatar: user.media.filePath }});
+  res.json({data: { avatar: user.media.filePath }});
 };
 
 export default {
