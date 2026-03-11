@@ -10,6 +10,7 @@ declare global {
         maxPrice?: number;
         minPrice?: number;
         genres?: string[];
+        searchValue?: string;
       };
       user?: {
         id: number;

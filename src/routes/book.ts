@@ -2,7 +2,8 @@ import multer from 'multer';
 import path from 'node:path';
 import { Router } from 'express';
 import bookController from '../controllers/book';
-import { schemaQueryValidator } from '../schema-query-validator';
+import { schemaQueryValidator, schemasValidatorRating } from '../schema-query-validator';
+import { authenticateToken } from '../utils/helpers';
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -33,5 +34,9 @@ export const bookRouter = Router()
   .get('/genres', bookController.getAllGenres)
   .get('/maxPrice', bookController.getMaxPrice)
   .get('/:id', bookController.getBook)
-  .post('/rating', bookController.setBookRating);
-  
+  .post(
+    '/rating',
+    authenticateToken,
+    schemasValidatorRating('set-rating'),
+    bookController.setBookRating
+  );

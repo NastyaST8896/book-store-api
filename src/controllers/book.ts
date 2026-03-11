@@ -7,10 +7,9 @@ import { Book } from '../db/entities/book';
 import { Genre } from '../db/entities/genre';
 
 import { Media } from '../db/entities/media';
-import { Between, In, Not } from 'typeorm';
+import { Between, ILike, In, Not } from 'typeorm';
 import { AppRequestHandler } from '../utils/types';
 import { BooksRating } from '../db/entities/books-rating';
-import { User } from 'src/db/entities/user';
 
 const getAverageRating = (booksRating: BooksRating[]): string => {
 
@@ -96,34 +95,40 @@ const getBooks: AppRequestHandler = async (req, res) => {
   const limit = req.validatedQuery.limit || 8;
   const sortBy = req.validatedQuery.sortBy || 'id';
   const genres = req.validatedQuery.genres;
+  const searchValue = req.validatedQuery.searchValue;
 
-  const where: any = {};
+  const where: any[] = [];
 
-  where.price = Between(
-    req.validatedQuery.minPrice || 0,
-    req.validatedQuery.maxPrice || Infinity
-  );
-
+  //  where.push({
+  //   price: Between(
+  //     req.validatedQuery.minPrice || 0,
+  //     req.validatedQuery.maxPrice || Infinity
+  //   )
+  // });
+  // if (genres?.length) {
+  //   where.push({
+  //     genres: { id: In(genres) },
+  //   });
+  // }
+  where.push({ title: ILike(`%${searchValue}%`) });
+  where.push({ author: ILike(`%${searchValue}%`) });
+ 
   const skip = (page - 1) * limit;
 
-  if (genres?.length) {
-    where.genres = {
-      id: In(genres),
-    };
-  }
-
   const [books, total] = await bookRepository.findAndCount({
+    where,
     relations: {
       media: true,
       booksRating: true,
     },
     skip,
     take: limit,
-    where,
     order: {
       [sortBy]: 'asc',
     },
   });
+
+  console.log(books)
 
   const result = books.map((book: Book) => ({
     ...book,
@@ -210,6 +215,7 @@ const getMaxPrice: AppRequestHandler = async (_, res) => {
   return res.json(data);
 };
 
+
 const getBook: AppRequestHandler = async (req, res) => {
   const book = await bookRepository.findOne({
     relations: { media: true, booksRating: true },
@@ -281,7 +287,7 @@ const setBookRating: AppRequestHandler = async (req, res) => {
 
   const bookRating = new BooksRating();
   bookRating.bookId = book.id;
-  bookRating.userId = +req.body.userId;
+  bookRating.userId = req.user.id;
   bookRating.rating = req.body.rating;
 
   await ratingRepository.save(bookRating);

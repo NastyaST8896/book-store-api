@@ -21,3 +21,21 @@ export const schemaQueryValidator = (path: string): AppRequestHandler => {
   };
 };
 
+export const schemasValidatorRating = (path: string): AppRequestHandler => {
+  const schema = schemas[path];
+
+  if (!schema) {
+    throw new Error(`Schema not found for path: ${schema}`);
+  }
+
+  return (req, res, next) => {
+    const { error } = schema.validate(req.body);
+
+    if (error) {
+      return res.status(422).json(error);
+    }
+    
+    return next();
+  };
+};
+
