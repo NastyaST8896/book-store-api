@@ -26,7 +26,13 @@ const getBooks = Joi.object().keys({
         .map((item: string) => Number(item.trim()));
     })
   ),
-  searchValue: Joi.string(),
+  searchValue: Joi.alternatives().try(
+    Joi.string().custom((value) => {
+      return value.split(' ')
+        .map((item: string) => item.trim())
+        .filter((item: string) => item !== '')
+    })
+  ),
 });
 
 const setBookRating = Joi.object().keys({

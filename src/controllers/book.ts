@@ -97,22 +97,37 @@ const getBooks: AppRequestHandler = async (req, res) => {
   const genres = req.validatedQuery.genres;
   const searchValue = req.validatedQuery.searchValue;
 
-  const where: any[] = [];
+  const where: any[] = []
 
-  //  where.push({
-  //   price: Between(
-  //     req.validatedQuery.minPrice || 0,
-  //     req.validatedQuery.maxPrice || Infinity
-  //   )
-  // });
-  // if (genres?.length) {
-  //   where.push({
-  //     genres: { id: In(genres) },
-  //   });
-  // }
-  where.push({ title: ILike(`%${searchValue}%`) });
-  where.push({ author: ILike(`%${searchValue}%`) });
- 
+  const commonWhereOptions = {
+    price: Between(
+      req.validatedQuery.minPrice || 0,
+      req.validatedQuery.maxPrice || Infinity
+    ),
+    genres: {
+      id: (genres?.length && In(genres)),
+    }
+  }
+
+  if (Array.isArray(searchValue)) {
+
+    searchValue.map((item: string) => (
+      where.push({
+        title: ILike(`%${item}%`),
+        ...commonWhereOptions
+      })
+    ))
+
+    searchValue.map((item: string) => (
+      where.push({
+        author: ILike(`%${item}%`),
+        ...commonWhereOptions
+      })
+    ))
+  } else {
+    where.push(commonWhereOptions);
+  }
+
   const skip = (page - 1) * limit;
 
   const [books, total] = await bookRepository.findAndCount({
@@ -127,8 +142,6 @@ const getBooks: AppRequestHandler = async (req, res) => {
       [sortBy]: 'asc',
     },
   });
-
-  console.log(books)
 
   const result = books.map((book: Book) => ({
     ...book,
@@ -171,7 +184,6 @@ const getBooks: AppRequestHandler = async (req, res) => {
         totalPages,
         totalAmount: total
       }
-      // maxPrice: +range.maxPrice,
     }
   });
 
