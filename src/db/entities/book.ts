@@ -11,6 +11,7 @@ import { Media } from './media';
 import { User } from './user';
 import { Genre } from './genre';
 import { BooksRating } from './books-rating';
+import { BooksInUserCart } from './books-in-user-cart';
 
 @Entity()
 export class Book {
@@ -51,4 +52,7 @@ export class Book {
 
   @OneToMany(() => BooksRating, (booksRating) => booksRating.book)
   booksRating: BooksRating[];
+
+  @OneToMany(() => BooksInUserCart, (BooksInUserCart) => BooksInUserCart.book)
+  BooksInUserCart: BooksInUserCart[];
 }
