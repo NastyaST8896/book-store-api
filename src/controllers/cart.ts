@@ -1,20 +1,28 @@
 import { In } from "typeorm";
 import { BooksInUserCart } from "../db/entities/books-in-user-cart";
-import { Cart } from "../db/entities/cart";
 import {
   bookRepository,
   booksInUserCartRepository,
   cartRepository,
-  userRepository
 } from "../db/repositories/repository";
 import { AppRequestHandler } from "../utils/types";
 
 const addBookInCart: AppRequestHandler = async (req, res) => {
-  const cart = await cartRepository.findOne({
-    where: {
+  await cartRepository
+    .createQueryBuilder()
+    .insert()
+    .values({
       userId: req.user.id,
       status: false
-    }
+    })
+    .orUpdate(["status"], ["userId"], {
+      skipUpdateIfNoValuesChanged: true,
+      indexPredicate: `"status" = false`,
+    })
+    .execute();
+
+  const cart = await cartRepository.findOne({
+    where: { userId: req.user.id, status: false }
   });
 
   const book = await bookRepository.findOne({
@@ -22,23 +30,6 @@ const addBookInCart: AppRequestHandler = async (req, res) => {
       id: req.body.bookId
     }
   })
-
-  if (!cart && req.user) {
-
-    const newCart = new Cart();
-
-    const user = await userRepository.findOne({
-      where: {
-        id: req.user.id
-      }
-    });
-
-    newCart.user = user;
-    newCart.userId = user.id;
-    newCart.status = false;
-
-    await cartRepository.save(newCart);
-  }
 
   const bookInUserCart = new BooksInUserCart();
 
