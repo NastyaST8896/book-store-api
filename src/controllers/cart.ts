@@ -31,13 +31,28 @@ const addBookInCart: AppRequestHandler = async (req, res) => {
     }
   })
 
-  const bookInUserCart = new BooksInUserCart();
+  const quantity = req.body.quantity;
 
-  bookInUserCart.book = book;
-  bookInUserCart.currentPrice = book.price;
-  bookInUserCart.cart = cart;
+  const [BookCopiesInCart, quantityBookCopiesInCart] = await booksInUserCartRepository.findAndCount({
+    where: {
+      bookId: req.body.bookId,
+      cartId: cart.id,
+    }
+  })
 
-  await booksInUserCartRepository.save(bookInUserCart);
+  if (quantity > quantityBookCopiesInCart || quantity === quantityBookCopiesInCart) {
+    const bookInUserCart = new BooksInUserCart();
+
+    bookInUserCart.book = book;
+    bookInUserCart.currentPrice = book.price;
+    bookInUserCart.cart = cart;
+
+    const quantityBooksForSave = quantity - (+quantityBookCopiesInCart);
+
+    const arrayBooks = Array(quantityBooksForSave).fill(bookInUserCart)
+
+    await booksInUserCartRepository.save(arrayBooks);
+  }
 
   return res.status(201).json({ data: { status: 'ok' } });
 };
