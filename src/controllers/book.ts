@@ -145,7 +145,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
 
   const result = books.map((book: Book) => ({
     ...book,
-    media: book.media.filePath,
+    media: `http://localhost:3000/${book.media.filePath}`,
     booksRating: getAverageRating(book.booksRating)
   }));
 
@@ -234,7 +234,7 @@ const getBook: AppRequestHandler = async (req, res) => {
     where: { id: +req.params.id }
   });
 
-  let currentUserRating: number = 0.0;
+  let currentUserRating: number = 0;
   if (req.query.userId) {
     const user = await userRepository.findOne({
 
@@ -268,7 +268,7 @@ const getBook: AppRequestHandler = async (req, res) => {
     author: book.author,
     price: book.price,
     booksRating: getAverageRating(book.booksRating),
-    media: book.media.filePath
+    media: `http://localhost:3000/${book.media.filePath}`
   }));
 
   res.json({
@@ -279,7 +279,7 @@ const getBook: AppRequestHandler = async (req, res) => {
         author: book.author,
         price: book.price,
         booksRating: getAverageRating(bookRating),
-        media: book.media.filePath,
+        media: `http://localhost:3000/${book.media.filePath}`,
         description: book.description,
         userRating: currentUserRating,
       },
@@ -311,6 +311,7 @@ const setBookRating: AppRequestHandler = async (req, res) => {
   return res.json({
     data: {
       booksRating: getAverageRating(ratingBook),
+      userRating: req.body.rating,
     }
   });
 };
