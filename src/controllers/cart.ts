@@ -8,18 +8,18 @@ import {
 import { AppRequestHandler } from "../utils/types";
 
 const addBookInCart: AppRequestHandler = async (req, res) => {
-  await cartRepository
-    .createQueryBuilder()
-    .insert()
-    .values({
+
+  await cartRepository.upsert(
+    [{
       userId: req.user.id,
       status: false
-    })
-    .orUpdate(["status"], ["userId"], {
+    }],
+    {
+      conflictPaths: ["userId"],
       skipUpdateIfNoValuesChanged: true,
       indexPredicate: `"status" = false`,
-    })
-    .execute();
+    },
+  )
 
   const cart = await cartRepository.findOne({
     where: { userId: req.user.id, status: false }
@@ -33,25 +33,28 @@ const addBookInCart: AppRequestHandler = async (req, res) => {
 
   const quantity = req.body.quantity;
 
-  const [BookCopiesInCart, quantityBookCopiesInCart] = await booksInUserCartRepository.findAndCount({
-    where: {
+  if (quantity) {
+    await booksInUserCartRepository.delete({
       bookId: req.body.bookId,
-      cartId: cart.id,
-    }
-  })
+      cartId: cart.id
+    })
 
-  if (quantity > quantityBookCopiesInCart || quantity === quantityBookCopiesInCart) {
     const bookInUserCart = new BooksInUserCart();
 
     bookInUserCart.book = book;
     bookInUserCart.currentPrice = book.price;
     bookInUserCart.cart = cart;
 
-    const quantityBooksForSave = quantity - (+quantityBookCopiesInCart);
-
-    const arrayBooks = Array(quantityBooksForSave).fill(bookInUserCart)
+    const arrayBooks = Array(quantity).fill(bookInUserCart)
 
     await booksInUserCartRepository.save(arrayBooks);
+  } else {
+    await booksInUserCartRepository.delete([
+      {
+        bookId: req.body.bookId,
+        cartId: cart.id
+      }
+    ]);
   }
 
   return res.status(201).json({ data: { status: 'ok' } });
@@ -97,8 +100,9 @@ const getCartBooks: AppRequestHandler = async (req, res) => {
       title: book.title,
       author: book.author,
       price: cartBook.totalPrice,
-      media: book.media?.filePath || '',
-      count: (cartBook.totalPrice * 10 / book.price) / 10
+      media: `${process.env.BASE_URL + book.media.filePath}` || '',
+      count: (cartBook.totalPrice * 10 / book.price) / 10,
+      availableCount: book.availableCount,
     }
   })
 
@@ -113,6 +117,18 @@ const getCartBooks: AppRequestHandler = async (req, res) => {
     }
   });
 };
+
+const checkoutCart: AppRequestHandler = async (req, res) => {
+  const cart = await cartRepository.update(
+    {
+      userId: req.user.id,
+      status: false
+    },
+    {
+      status: true
+    }
+  );
+}
 
 
 export default { addBookInCart, getCartBooks };

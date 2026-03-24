@@ -145,7 +145,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
 
   const result = books.map((book: Book) => ({
     ...book,
-    media: `http://localhost:3000/${book.media.filePath}`,
+    media: `${process.env.BASE_URL+book.media.filePath}`,
     booksRating: getAverageRating(book.booksRating)
   }));
 
@@ -268,7 +268,7 @@ const getBook: AppRequestHandler = async (req, res) => {
     author: book.author,
     price: book.price,
     booksRating: getAverageRating(book.booksRating),
-    media: `http://localhost:3000/${book.media.filePath}`
+    media: `${process.env.BASE_URL+book.media.filePath}`
   }));
 
   res.json({
@@ -279,7 +279,7 @@ const getBook: AppRequestHandler = async (req, res) => {
         author: book.author,
         price: book.price,
         booksRating: getAverageRating(bookRating),
-        media: `http://localhost:3000/${book.media.filePath}`,
+        media: `${process.env.BASE_URL+book.media.filePath}`,
         description: book.description,
         userRating: currentUserRating,
       },

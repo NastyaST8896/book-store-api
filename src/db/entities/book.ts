@@ -36,6 +36,9 @@ export class Book {
   @Column('text', { nullable: true })
   description: string;
 
+  @Column({ nullable: true })
+  availableCount: number;
+
   @OneToOne(() => Media, (image) => image.book, {
     cascade: true
   })
