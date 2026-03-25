@@ -29,11 +29,15 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage: storage, fileFilter: fileFilter });
 
 export const bookRouter = Router()
-  .get('/', schemaQueryValidator('get-books'), bookController.getBooks)
+  .get(
+    '/',
+    authenticateToken, 
+    schemaQueryValidator('get-books'), 
+    bookController.getBooks)
   .post('/create-book', upload.single('cover'), bookController.createBook)
   .get('/genres', bookController.getAllGenres)
   .get('/maxPrice', bookController.getMaxPrice)
-  .get('/:id', bookController.getBook)
+  .get('/:id', authenticateToken, bookController.getBook)
   .post(
     '/rating',
     authenticateToken,

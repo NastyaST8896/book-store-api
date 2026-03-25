@@ -1,5 +1,7 @@
 import {
   bookRepository,
+  booksInUserCartRepository,
+  cartRepository,
   genreRepository,
   ratingRepository, userRepository
 } from '../db/repositories/repository';
@@ -10,6 +12,7 @@ import { Media } from '../db/entities/media';
 import { Between, ILike, In, Not } from 'typeorm';
 import { AppRequestHandler } from '../utils/types';
 import { BooksRating } from '../db/entities/books-rating';
+import { availableMemory } from 'node:process';
 
 const getAverageRating = (booksRating: BooksRating[]): string => {
 
@@ -30,7 +33,15 @@ const getAverageRating = (booksRating: BooksRating[]): string => {
 };
 
 const createBook: AppRequestHandler = async (req, res) => {
-  const { title, author, releaseDate, genres, price, rating } = req.body;
+  const {
+    title,
+    author,
+    releaseDate,
+    genres,
+    price,
+    rating,
+    availableCount
+  } = req.body;
   const file = req.file;
 
   if (!file) {
@@ -68,7 +79,6 @@ const createBook: AppRequestHandler = async (req, res) => {
     });
   }
 
-
   const media = new Media();
   media.originalName = file.originalname;
   media.uploadName = file.filename;
@@ -84,6 +94,7 @@ const createBook: AppRequestHandler = async (req, res) => {
   book.rating = rating;
   book.media = media;
   book.genres = [...dbGenres, ...dbNewGenres];
+  book.availableCount = availableCount;
 
   await bookRepository.save(book);
 
@@ -143,11 +154,34 @@ const getBooks: AppRequestHandler = async (req, res) => {
     },
   });
 
-  const result = books.map((book: Book) => ({
-    ...book,
-    media: `${process.env.BASE_URL+book.media.filePath}`,
-    booksRating: getAverageRating(book.booksRating)
-  }));
+  const cart = await cartRepository.findOne({
+    where: {
+      userId: req.user.id,
+      status: false
+    }
+  });
+
+  const cartBooks = await booksInUserCartRepository
+    .createQueryBuilder("allBooksInCart")
+    .select("allBooksInCart.bookId")
+    .addSelect("SUM(allBooksInCart.currentPrice)", "totalPrice")
+    .where("allBooksInCart.cartId = :cartId", { cartId: cart.id })
+    .groupBy("allBooksInCart.bookId")
+    .getRawMany();
+
+
+  const result = books.map((book: Book) => {
+    const cartBook = cartBooks.find((cartBook) => {
+      return cartBook.allBooksInCart_bookId === book.id
+    })
+
+    return {
+      ...book,
+      media: `${process.env.BASE_URL + book.media.filePath}`,
+      booksRating: getAverageRating(book.booksRating),
+      count: cartBook ? (cartBook.totalPrice * 10 / book.price) / 10 : 0,
+    }
+  });
 
   const totalPages = Math.ceil(total / limit);
 
@@ -234,6 +268,25 @@ const getBook: AppRequestHandler = async (req, res) => {
     where: { id: +req.params.id }
   });
 
+  const cart = await cartRepository.findOne({
+    where: {
+      userId: req.user.id,
+      status: false
+    }
+  });
+
+  const cartBooks = await booksInUserCartRepository
+    .createQueryBuilder("allBooksInCart")
+    .select("allBooksInCart.bookId")
+    .addSelect("SUM(allBooksInCart.currentPrice)", "totalPrice")
+    .where("allBooksInCart.cartId = :cartId", { cartId: cart.id })
+    .groupBy("allBooksInCart.bookId")
+    .getRawMany();
+
+  const cartBook = cartBooks.find((cartBook) => {
+    return cartBook.allBooksInCart_bookId === book.id
+  })
+
   let currentUserRating: number = 0;
   if (req.query.userId) {
     const user = await userRepository.findOne({
@@ -262,14 +315,21 @@ const getBook: AppRequestHandler = async (req, res) => {
     take: 4
   });
 
-  const result = recommendedBooks.map((book: Book) => ({
-    id: book.id,
-    title: book.title,
-    author: book.author,
-    price: book.price,
-    booksRating: getAverageRating(book.booksRating),
-    media: `${process.env.BASE_URL+book.media.filePath}`
-  }));
+  const result = recommendedBooks.map((book: Book) => {
+    const cartBook = cartBooks.find((cartBook) => {
+      return cartBook.allBooksInCart_bookId === book.id
+    })
+    return {
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      price: book.price,
+      booksRating: getAverageRating(book.booksRating),
+      media: `${process.env.BASE_URL + book.media.filePath}`,
+      count: cartBook ? (cartBook.totalPrice * 10 / book.price) / 10 : 0,
+      availableCount: book.availableCount,
+    }
+  });
 
   res.json({
     data: {
@@ -279,9 +339,11 @@ const getBook: AppRequestHandler = async (req, res) => {
         author: book.author,
         price: book.price,
         booksRating: getAverageRating(bookRating),
-        media: `${process.env.BASE_URL+book.media.filePath}`,
+        media: `${process.env.BASE_URL + book.media.filePath}`,
         description: book.description,
         userRating: currentUserRating,
+        count: cartBook ? (cartBook.totalPrice * 10 / book.price) / 10 : 0,
+        availableCount: book.availableCount
       },
       recommended: result,
     }

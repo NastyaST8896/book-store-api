@@ -76,7 +76,6 @@ const getCartBooks: AppRequestHandler = async (req, res) => {
     .groupBy("allBooksInCart.bookId")
     .getRawMany();
 
-
   const cartBooksId = books.map((book) => {
     return book.allBooksInCart_bookId
   });
