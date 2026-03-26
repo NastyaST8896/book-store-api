@@ -38,7 +38,6 @@ const addBookInCart: AppRequestHandler = async (req, res) => {
       bookId: req.body.bookId,
       cartId: cart.id
     })
-
     const bookInUserCart = new BooksInUserCart();
 
     bookInUserCart.book = book;
@@ -100,7 +99,7 @@ const getCartBooks: AppRequestHandler = async (req, res) => {
       author: book.author,
       price: cartBook.totalPrice,
       media: `${process.env.BASE_URL + book.media.filePath}` || '',
-      count: (cartBook.totalPrice * 10 / book.price) / 10,
+      count: Math.round(cartBook.totalPrice / book.price),
       availableCount: book.availableCount,
     }
   })
