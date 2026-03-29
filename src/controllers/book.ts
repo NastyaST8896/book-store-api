@@ -7,7 +7,7 @@ import { Book } from '../db/entities/book';
 import { Genre } from '../db/entities/genre';
 
 import { Media } from '../db/entities/media';
-import { Between, ILike, In, Not } from 'typeorm';
+import { Between, ILike, In } from 'typeorm';
 import { AppRequestHandler } from '../utils/types';
 import { BooksRating } from '../db/entities/books-rating';
 
@@ -105,7 +105,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
   const genres = req.validatedQuery.genres;
   const searchValue = req.validatedQuery.searchValue;
 
-  const where: any[] = []
+  const where: any[] = [];
 
   const commonWhereOptions = {
     price: Between(
@@ -115,7 +115,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
     genres: {
       id: (genres?.length && In(genres)),
     }
-  }
+  };
 
   if (Array.isArray(searchValue)) {
 
@@ -124,14 +124,14 @@ const getBooks: AppRequestHandler = async (req, res) => {
         title: ILike(`%${item}%`),
         ...commonWhereOptions
       })
-    ))
+    ));
 
     searchValue.map((item: string) => (
       where.push({
         author: ILike(`%${item}%`),
         ...commonWhereOptions
       })
-    ))
+    ));
   } else {
     where.push(commonWhereOptions);
   }
@@ -157,7 +157,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
       ...book,
       media: `${process.env.BASE_URL + book.media.filePath}`,
       booksRating: getAverageRating(book.booksRating),
-    }
+    };
   });
 
   const totalPages = Math.ceil(total / limit);
@@ -302,7 +302,7 @@ const getBook: AppRequestHandler = async (req, res) => {
   });
 
   const result = recommendedBooks.map((book: Book) => {
-  
+
     return {
       id: book.id,
       title: book.title,
@@ -311,7 +311,7 @@ const getBook: AppRequestHandler = async (req, res) => {
       booksRating: getAverageRating(book.booksRating),
       media: `${process.env.BASE_URL + book.media.filePath}`,
       availableCount: book.availableCount,
-    }
+    };
   });
 
   res.json({
@@ -351,6 +351,8 @@ const setBookRating: AppRequestHandler = async (req, res) => {
   const ratingBook = await ratingRepository.find({
     where: { bookId: +req.body.bookId }
   });
+
+  await bookRepository.update({ id: +req.body.bookId }, { rating: +getAverageRating(ratingBook) });
 
   return res.json({
     data: {
