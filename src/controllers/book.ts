@@ -267,9 +267,37 @@ const getBook: AppRequestHandler = async (req, res) => {
     where: { bookId: +req.params.id }
   });
 
+  const id = await bookRepository
+    .createQueryBuilder('books')
+    .select('MAX(books.id)', 'max')
+    .getRawOne();
+
+  const arrayBooks: number[] = [];
+
+  const books = await bookRepository.find();
+
+  const getId = (arrayBooks: number[]) => {
+    const book = Math.ceil(Math.random() * id.max);
+
+    const booksIncludesId = books.find(bookInRepo => bookInRepo.id === book);
+
+    if (!booksIncludesId || book === +req.params.id || arrayBooks.includes(book)) {
+      return getId(arrayBooks);
+    }
+
+    if (arrayBooks.length === 4) {
+      return;
+    }
+
+    arrayBooks.push(book);
+    return getId(arrayBooks);
+  };
+
+  getId(arrayBooks);
+
   const recommendedBooks = await bookRepository.find({
     relations: { media: true, booksRating: true },
-    where: { id: Not(+req.params.id) },
+    where: { id: In(arrayBooks) },
     take: 4
   });
 
