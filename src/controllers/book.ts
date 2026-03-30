@@ -7,7 +7,7 @@ import { Book } from '../db/entities/book';
 import { Genre } from '../db/entities/genre';
 
 import { Media } from '../db/entities/media';
-import { Between, ILike, In } from 'typeorm';
+import { Between, ILike, In, Not } from 'typeorm';
 import { AppRequestHandler } from '../utils/types';
 import { BooksRating } from '../db/entities/books-rating';
 
@@ -36,7 +36,6 @@ const createBook: AppRequestHandler = async (req, res) => {
     releaseDate,
     genres,
     price,
-    rating,
     availableCount
   } = req.body;
   const file = req.file;
@@ -88,7 +87,7 @@ const createBook: AppRequestHandler = async (req, res) => {
   book.author = author;
   book.releaseDate = releaseDate;
   book.price = price;
-  book.rating = rating;
+  book.rating = 0.0;
   book.media = media;
   book.genres = [...dbGenres, ...dbNewGenres];
   book.availableCount = availableCount;
@@ -247,15 +246,9 @@ const getBook: AppRequestHandler = async (req, res) => {
 
   let currentUserRating: number = 0;
   if (req.query.userId) {
-    const user = await userRepository.findOne({
-
-      relations: { booksRating: true },
-      where: { id: +req.query.userId }
-    });
-
     const userRating = await ratingRepository.findOne({
       where: {
-        userId: user.id,
+        userId: +req.query.userId ,
         bookId: book.id,
       }
     });
@@ -272,7 +265,13 @@ const getBook: AppRequestHandler = async (req, res) => {
     .select('MAX(books.id)', 'max')
     .getRawOne();
 
-  const arrayBooks: number[] = [];
+    const arrayBooks: number[] = [];
+  // const arrayBooks = await bookRepository
+  // .createQueryBuilder('book')
+  // .where({id: Not(+req.params.id)})
+  // .select()
+  // .orderBy('RANDOM()')
+
 
   const books = await bookRepository.find();
 
@@ -281,7 +280,11 @@ const getBook: AppRequestHandler = async (req, res) => {
 
     const booksIncludesId = books.find(bookInRepo => bookInRepo.id === book);
 
-    if (!booksIncludesId || book === +req.params.id || arrayBooks.includes(book)) {
+    if (
+      !booksIncludesId
+      || book === +req.params.id
+      || arrayBooks.includes(book)
+    ) {
       return getId(arrayBooks);
     }
 
@@ -352,7 +355,9 @@ const setBookRating: AppRequestHandler = async (req, res) => {
     where: { bookId: +req.body.bookId }
   });
 
-  await bookRepository.update({ id: +req.body.bookId }, { rating: +getAverageRating(ratingBook) });
+  await bookRepository.update(
+    { id: +req.body.bookId },
+    { rating: +getAverageRating(ratingBook) });
 
   return res.json({
     data: {
