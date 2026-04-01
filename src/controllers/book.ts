@@ -248,7 +248,7 @@ const getBook: AppRequestHandler = async (req, res) => {
   if (req.query.userId) {
     const userRating = await ratingRepository.findOne({
       where: {
-        userId: +req.query.userId ,
+        userId: +req.query.userId,
         bookId: book.id,
       }
     });
@@ -256,53 +256,14 @@ const getBook: AppRequestHandler = async (req, res) => {
     currentUserRating = userRating?.rating;
   }
 
-  const bookRating = await ratingRepository.find({
-    where: { bookId: +req.params.id }
-  });
-
-  const id = await bookRepository
-    .createQueryBuilder('books')
-    .select('MAX(books.id)', 'max')
-    .getRawOne();
-
-    const arrayBooks: number[] = [];
-  // const arrayBooks = await bookRepository
-  // .createQueryBuilder('book')
-  // .where({id: Not(+req.params.id)})
-  // .select()
-  // .orderBy('RANDOM()')
-
-
-  const books = await bookRepository.find();
-
-  const getId = (arrayBooks: number[]) => {
-    const book = Math.ceil(Math.random() * id.max);
-
-    const booksIncludesId = books.find(bookInRepo => bookInRepo.id === book);
-
-    if (
-      !booksIncludesId
-      || book === +req.params.id
-      || arrayBooks.includes(book)
-    ) {
-      return getId(arrayBooks);
-    }
-
-    if (arrayBooks.length === 4) {
-      return;
-    }
-
-    arrayBooks.push(book);
-    return getId(arrayBooks);
-  };
-
-  getId(arrayBooks);
-
-  const recommendedBooks = await bookRepository.find({
-    relations: { media: true, booksRating: true },
-    where: { id: In(arrayBooks) },
-    take: 4
-  });
+  const recommendedBooks = await bookRepository
+    .createQueryBuilder('book')
+    .leftJoinAndSelect("book.media", "Media")
+    .leftJoinAndSelect("book.booksRating", "booksRating")
+    .where({ id: Not(+req.params.id) })
+    .orderBy('RANDOM()')
+    .limit(4)
+    .getMany();
 
   const result = recommendedBooks.map((book: Book) => {
 
@@ -311,7 +272,7 @@ const getBook: AppRequestHandler = async (req, res) => {
       title: book.title,
       author: book.author,
       price: book.price,
-      booksRating: getAverageRating(book.booksRating),
+      booksRating: book.rating.toFixed(1),
       media: `${process.env.BASE_URL + book.media.filePath}`,
       availableCount: book.availableCount,
     };
@@ -324,12 +285,42 @@ const getBook: AppRequestHandler = async (req, res) => {
         title: book.title,
         author: book.author,
         price: book.price,
-        booksRating: getAverageRating(bookRating),
+        booksRating: book.rating.toFixed(1),
         media: `${process.env.BASE_URL + book.media.filePath}`,
         description: book.description,
         userRating: currentUserRating,
         availableCount: book.availableCount
       },
+    }
+  });
+};
+
+const getRecommendedBooks: AppRequestHandler = async (req, res) => {
+  
+   const recommendedBooks = await bookRepository
+    .createQueryBuilder('book')
+    .leftJoinAndSelect("book.media", "Media")
+    .leftJoinAndSelect("book.booksRating", "booksRating")
+    .where({ id: Not(+req.params.id) })
+    .orderBy('RANDOM()')
+    .limit(6)
+    .getMany();
+
+  const result = recommendedBooks.map((book: Book) => {
+
+    return {
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      price: book.price,
+      booksRating: book.rating.toFixed(1),
+      media: `${process.env.BASE_URL + book.media.filePath}`,
+      availableCount: book.availableCount,
+    };
+  });
+
+   res.json({
+    data: {
       recommended: result,
     }
   });
@@ -370,6 +361,7 @@ export default {
   createBook,
   getBooks,
   getBook,
+  getRecommendedBooks,
   getAllGenres,
   getMaxPrice,
   setBookRating
