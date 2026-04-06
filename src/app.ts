@@ -8,7 +8,10 @@ import { CartRouter } from './routes/cart';
 
 const app: Application = express();
 // todo
-app.use(cors({ credentials: true, origin: 'http://localhost:5173' }));
+app.use(cors({
+  credentials: true,
+  origin: 'http://localhost:5173',
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));

@@ -256,28 +256,6 @@ const getBook: AppRequestHandler = async (req, res) => {
     currentUserRating = userRating?.rating;
   }
 
-  const recommendedBooks = await bookRepository
-    .createQueryBuilder('book')
-    .leftJoinAndSelect("book.media", "Media")
-    .leftJoinAndSelect("book.booksRating", "booksRating")
-    .where({ id: Not(+req.params.id) })
-    .orderBy('RANDOM()')
-    .limit(4)
-    .getMany();
-
-  const result = recommendedBooks.map((book: Book) => {
-
-    return {
-      id: book.id,
-      title: book.title,
-      author: book.author,
-      price: book.price,
-      booksRating: book.rating.toFixed(1),
-      media: `${process.env.BASE_URL + book.media.filePath}`,
-      availableCount: book.availableCount,
-    };
-  });
-
   res.json({
     data: {
       book: {
@@ -300,10 +278,9 @@ const getRecommendedBooks: AppRequestHandler = async (req, res) => {
    const recommendedBooks = await bookRepository
     .createQueryBuilder('book')
     .leftJoinAndSelect("book.media", "Media")
-    .leftJoinAndSelect("book.booksRating", "booksRating")
     .where({ id: Not(+req.params.id) })
     .orderBy('RANDOM()')
-    .limit(6)
+    .limit(4)
     .getMany();
 
   const result = recommendedBooks.map((book: Book) => {
