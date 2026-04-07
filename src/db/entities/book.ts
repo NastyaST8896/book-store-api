@@ -12,6 +12,7 @@ import { User } from './user';
 import { Genre } from './genre';
 import { BooksRating } from './books-rating';
 import { BooksInUserCart } from './books-in-user-cart';
+import { Comments } from './comments';
 
 @Entity()
 export class Book {
@@ -58,4 +59,7 @@ export class Book {
 
   @OneToMany(() => BooksInUserCart, (BooksInUserCart) => BooksInUserCart.book)
   BooksInUserCart: BooksInUserCart[];
+
+  @OneToMany(() => Comments, (comments) => comments.book)
+  comments: Comments[];
 }

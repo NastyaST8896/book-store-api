@@ -13,6 +13,7 @@ import jwt from 'jsonwebtoken';
 import { Book } from './book';
 import { BooksRating } from './books-rating';
 import { Cart } from './cart';
+import { Comments } from './comments';
 
 @Entity()
 export class User {
@@ -53,4 +54,7 @@ export class User {
       { expiresIn: '60m' }
     );
   }
+
+  @OneToMany(() => Comments, (comments) => comments.user)
+    comments: Comments[];
 }
