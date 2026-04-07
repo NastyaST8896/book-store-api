@@ -5,6 +5,7 @@ import { userRouter } from './routes/user'
 import cookieParser from 'cookie-parser';
 import { bookRouter } from './routes/book';
 import { CartRouter } from './routes/cart';
+import { CommentsRouter } from './routes/comments';
 
 const app: Application = express();
 // todo
@@ -20,6 +21,7 @@ app.use('/', authRouter);
 app.use('/user', userRouter);
 app.use('/books', bookRouter);
 app.use('/cart', CartRouter);
+app.use('/comments', CommentsRouter);
 
 app.use((err, req, res, next) => {
   console.error(err);
