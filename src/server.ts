@@ -2,25 +2,12 @@ import 'dotenv/config';
 import 'reflect-metadata';
 import { AppDataSource } from './config/database';
 import app from './app';
-import { createServer } from 'node:http';
 import http from 'http';
-import { Server } from 'socket.io';
+import { createConnection } from './socket';
 
 const PORT = process.env.PORT || 3000;
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST"],
-    credentials: true
-  }
-});
-
-io.on('connection', (socket) => {
-  socket.on('new comment', (text) => {
-    io.emit('new comment', text)
-  })
-});
+export const server = http.createServer(app);
+const io = createConnection(server);
 
 AppDataSource.initialize()
   .then(() => {
@@ -30,6 +17,10 @@ AppDataSource.initialize()
       //   return;
       // }
       console.log(`Server running on port ${PORT}`);
+    });
+
+    io.on('connection', (socket) => {
+      console.log('a user connected');
     });
   })
   .catch((err: unknown) => console.log(err));

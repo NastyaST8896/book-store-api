@@ -1,6 +1,7 @@
 import { AppRequestHandler } from "../utils/types";
 import { Comments } from "../db/entities/comments";
 import { commentsRepository } from "../db/repositories/repository";
+import { io } from "../socket";
 
 const addBookComment: AppRequestHandler = async (req, res) => {
   const newComment = new Comments;
@@ -10,6 +11,10 @@ const addBookComment: AppRequestHandler = async (req, res) => {
   newComment.description = req.body.text;
 
   commentsRepository.save(newComment);
+
+
+    io.emit('new_comment', {'text': 'da'});
+
 
   return res.status(200).json({ data: { status: 'ok' } });
 };
@@ -22,7 +27,7 @@ const getBookComments: AppRequestHandler = async (req, res) => {
       user: {
         media: true,
       }
-      },
+    },
     where: {
       bookId
     },
@@ -33,7 +38,7 @@ const getBookComments: AppRequestHandler = async (req, res) => {
 
   let result = []
 
-   if(comments) {
+  if (comments) {
     result = comments.map((comment) => {
       return {
         id: comment.id,
@@ -43,8 +48,8 @@ const getBookComments: AppRequestHandler = async (req, res) => {
         img: `${process.env.BASE_URL + comment.user.media.filePath}`,
       }
     })
-   }
-  
+  }
+
 
   res.status(200).json({
     data: {
