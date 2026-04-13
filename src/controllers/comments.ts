@@ -13,7 +13,7 @@ const addBookComment: AppRequestHandler = async (req, res) => {
   commentsRepository.save(newComment);
 
 
-    io.emit('new_comment', {'text': 'da'});
+    io.emit('new comment', {'text': 'da'});
 
 
   return res.status(200).json({ data: { status: 'ok' } });
