@@ -9,6 +9,8 @@ const PORT = process.env.PORT || 3000;
 export const server = http.createServer(app);
 const io = createConnection(server);
 
+export const activeSockets = new Map();
+
 AppDataSource.initialize()
   .then(() => {
     server.listen(PORT, () => {
@@ -20,7 +22,11 @@ AppDataSource.initialize()
     });
 
     io.on('connection', (socket) => {
-      console.log('a user connected');
+      activeSockets.set(socket.handshake.query.userId, socket);
+
+      socket.on('disconnect', () => {
+        activeSockets.delete(socket.handshake.query.userId)
+      });
     });
   })
   .catch((err: unknown) => console.log(err));

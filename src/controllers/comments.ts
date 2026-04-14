@@ -1,7 +1,8 @@
 import { AppRequestHandler } from "../utils/types";
 import { Comments } from "../db/entities/comments";
-import { commentsRepository } from "../db/repositories/repository";
+import { bookRepository, commentsRepository } from "../db/repositories/repository";
 import { io } from "../socket";
+import { activeSockets } from "../server";
 
 const addBookComment: AppRequestHandler = async (req, res) => {
   const newComment = new Comments;
@@ -10,11 +11,22 @@ const addBookComment: AppRequestHandler = async (req, res) => {
   newComment.userId = req.user.id;
   newComment.description = req.body.text;
 
+  const currentBook = await bookRepository.findOne({
+    where: { id: req.body.bookId }
+  });
+
   commentsRepository.save(newComment);
 
+  if (activeSockets) {
+    const socket = activeSockets.get(String(req.user.id));
 
-    io.emit('new comment', {'text': 'da'});
+    socket.broadcast.emit(
+      'new comment toast',
+      { title: currentBook.title, id: currentBook.id }
+    );
+  }
 
+  io.emit('new comment');
 
   return res.status(200).json({ data: { status: 'ok' } });
 };
@@ -49,7 +61,6 @@ const getBookComments: AppRequestHandler = async (req, res) => {
       }
     })
   }
-
 
   res.status(200).json({
     data: {
