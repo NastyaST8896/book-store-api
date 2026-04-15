@@ -5,7 +5,14 @@ import { io } from "../socket";
 import { activeSockets } from "../server";
 
 const addBookComment: AppRequestHandler = async (req, res) => {
-  const newComment = new Comments;
+  const newComment = new Comments();
+
+  const eventsKeyList = {
+    NEW_COMMENT: 'new comment',
+    NEW_COMMENT_TOAST: 'new comment toast'
+  }
+
+  const activeSockets = newIo.getActiveSocket();
 
   newComment.bookId = req.body.bookId;
   newComment.userId = req.user.id;
@@ -21,12 +28,13 @@ const addBookComment: AppRequestHandler = async (req, res) => {
     const socket = activeSockets.get(String(req.user.id));
 
     socket.broadcast.emit(
-      'new comment toast',
+      eventsKeyList.NEW_COMMENT_TOAST, 
       { title: currentBook.title, id: currentBook.id }
     );
   }
 
-  io.emit('new comment');
+  
+  io.emit(eventsKeyList.NEW_COMMENT);
 
   return res.status(200).json({ data: { status: 'ok' } });
 };
