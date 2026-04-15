@@ -3,13 +3,11 @@ import 'reflect-metadata';
 import { AppDataSource } from './config/database';
 import app from './app';
 import http from 'http';
-import { createConnection } from './socket';
+import { ConnectionManager } from './socket';
 
 const PORT = process.env.PORT || 3000;
 export const server = http.createServer(app);
-const io = createConnection(server);
-
-export const activeSockets = new Map();
+export const io = ConnectionManager.createConnection(server);
 
 AppDataSource.initialize()
   .then(() => {
@@ -21,11 +19,11 @@ AppDataSource.initialize()
       console.log(`Server running on port ${PORT}`);
     });
 
-    io.on('connection', (socket) => {
-      activeSockets.set(socket.handshake.query.userId, socket);
+    io.on('connection', async(socket) => {
+      ConnectionManager.setActiveSocket(socket.handshake.query.userId, socket);
 
       socket.on('disconnect', () => {
-        activeSockets.delete(socket.handshake.query.userId)
+        ConnectionManager.deleteActiveSocket(socket.handshake.query.userId)
       });
     });
   })

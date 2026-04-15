@@ -1,8 +1,8 @@
 import { AppRequestHandler } from "../utils/types";
 import { Comments } from "../db/entities/comments";
 import { bookRepository, commentsRepository } from "../db/repositories/repository";
-import { io } from "../socket";
-import { activeSockets } from "../server";
+import { io } from "../server";
+import { ConnectionManager } from "../socket";
 
 const addBookComment: AppRequestHandler = async (req, res) => {
   const newComment = new Comments();
@@ -12,7 +12,7 @@ const addBookComment: AppRequestHandler = async (req, res) => {
     NEW_COMMENT_TOAST: 'new comment toast'
   }
 
-  const activeSockets = newIo.getActiveSocket();
+  const activeSockets = ConnectionManager.getActiveSocket();
 
   newComment.bookId = req.body.bookId;
   newComment.userId = req.user.id;
@@ -25,8 +25,7 @@ const addBookComment: AppRequestHandler = async (req, res) => {
   commentsRepository.save(newComment);
 
   if (activeSockets) {
-    const socket = activeSockets.get(String(req.user.id));
-
+    const socket = ConnectionManager.getSocketByUserId(String(req.user.id));
     socket.broadcast.emit(
       eventsKeyList.NEW_COMMENT_TOAST, 
       { title: currentBook.title, id: currentBook.id }
