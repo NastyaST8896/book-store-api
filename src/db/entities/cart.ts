@@ -21,7 +21,7 @@ export class Cart {
   id: number;
 
   @Column({ default: false })
-  status: boolean;
+  isCheckout: boolean;
 
   @CreateDateColumn()
   createdAt: Date;

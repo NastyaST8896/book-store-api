@@ -12,17 +12,17 @@ const addBookInCart: AppRequestHandler = async (req, res) => {
   await cartRepository.upsert(
     [{
       userId: req.user.id,
-      status: false
+      isCheckout: false
     }],
     {
       conflictPaths: ["userId"],
       skipUpdateIfNoValuesChanged: true,
-      indexPredicate: `"status" = false`,
+      indexPredicate: `"isCheckout" = false`,
     },
   )
 
   const cart = await cartRepository.findOne({
-    where: { userId: req.user.id, status: false }
+    where: { userId: req.user.id, isCheckout: false }
   });
 
   const book = await bookRepository.findOne({
@@ -63,7 +63,7 @@ const getCartBooks: AppRequestHandler = async (req, res) => {
   const cart = await cartRepository.findOne({
     where: {
       userId: req.user.id,
-      status: false
+      isCheckout: false
     }
   });
 
@@ -120,10 +120,10 @@ const checkoutCart: AppRequestHandler = async (req, res) => {
   const cart = await cartRepository.update(
     {
       userId: req.user.id,
-      status: false
+      isCheckout: false
     },
     {
-      status: true
+      isCheckout: true
     }
   );
 }
