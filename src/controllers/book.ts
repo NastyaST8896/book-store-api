@@ -1,7 +1,7 @@
 import {
   bookRepository,
   genreRepository,
-  ratingRepository, userRepository
+  ratingRepository
 } from '../db/repositories/repository';
 import { Book } from '../db/entities/book';
 import { Genre } from '../db/entities/genre';
