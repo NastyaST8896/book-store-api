@@ -1,15 +1,22 @@
 import { AppRequestHandler } from "../utils/types";
 import { Comments } from "../db/entities/comments";
-import { bookRepository, commentsRepository } from "../db/repositories/repository";
+import {
+  bookRepository,
+  commentNotificationsRepository,
+  commentsRepository,
+  userRepository
+} from "../db/repositories/repository";
 import { io } from "../server";
 import { ConnectionManager } from "../socket";
+import { CommentNotifications } from "../db/entities/comment-notifications";
 
 const addBookComment: AppRequestHandler = async (req, res) => {
   const newComment = new Comments();
 
   const eventsKeyList = {
     NEW_COMMENT: 'new comment',
-    NEW_COMMENT_TOAST: 'new comment toast'
+    NEW_COMMENT_TOAST: 'new comment toast',
+    BOOK_COMMENT_NOTIFICATION: 'book comment notification'
   }
 
   const activeSockets = ConnectionManager.getActiveSocket();
@@ -18,21 +25,76 @@ const addBookComment: AppRequestHandler = async (req, res) => {
   newComment.userId = req.user.id;
   newComment.description = req.body.text;
 
+  const commentAuthor = await userRepository.findOne({
+    relations: { media: true },
+    where: { id: req.user.id }
+  });
+
   const currentBook = await bookRepository.findOne({
     where: { id: req.body.bookId }
   });
 
-  commentsRepository.save(newComment);
+  await commentsRepository.save(newComment);
 
-  if (activeSockets) {
-    const socket = ConnectionManager.getSocketByUserId(String(req.user.id));
-    socket.broadcast.emit(
-      eventsKeyList.NEW_COMMENT_TOAST, 
-      { title: currentBook.title, id: currentBook.id }
-    );
+  const socket = ConnectionManager.getSocketByUserId(String(req.user.id));
+  socket.join(`${req.body.bookId} book room`);
+
+  const usersSubscribedToBookNotification = await commentsRepository
+    .createQueryBuilder("comments")
+    .select("comments.userId")
+    .where("comments.bookId = :bookId", { bookId: req.body.bookId })
+    .andWhere("comments.userId <> :userId", { userId: req.user.id })
+    .distinct(true)
+    .getRawMany();
+
+  if (usersSubscribedToBookNotification.length) {
+
+    const usersId = usersSubscribedToBookNotification.map((userId) => {
+      return userId.comments_userId;
+    })
+
+    const comment = await commentsRepository.findOne({
+      where: {
+        description: req.body.text,
+      },
+      order: {
+        createAt: 'DESC',
+      },
+    });
+
+    usersId.forEach((user) => {
+      const commentNotification = new CommentNotifications();
+      commentNotification.userId = user;
+      commentNotification.commentId = comment.id;
+      commentNotification.meta = {
+        type: 'bookComment',
+        bookId: req.body.bookId,
+        commentAuthorId: req.user.id,
+      }
+      commentNotificationsRepository.save(commentNotification);
+    })
+
+    if (activeSockets) {
+      const socket = ConnectionManager.getSocketByUserId(String(req.user.id));
+      socket.to(`${req.body.bookId} book room`).emit(
+        eventsKeyList.BOOK_COMMENT_NOTIFICATION, {
+        id: comment.id,
+        name: commentAuthor.fullName,
+        date: comment.createAt,
+        bookTitle: currentBook.title,
+        text: comment.description,
+        img: `${process.env.BASE_URL + commentAuthor.media.filePath}`,
+        bookId: currentBook.id,
+      });
+    }
+
+    // socket.broadcast.emit(
+    //   eventsKeyList.NEW_COMMENT_TOAST,
+    //   { title: currentBook.title, id: currentBook.id }
+    // );
   }
 
-  
+
   io.emit(eventsKeyList.NEW_COMMENT);
 
   return res.status(200).json({ data: { status: 'ok' } });

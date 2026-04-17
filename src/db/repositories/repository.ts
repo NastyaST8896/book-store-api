@@ -8,6 +8,7 @@ import { BooksRating } from "../entities/books-rating";
 import { Cart } from "../entities/cart";
 import { BooksInUserCart } from "../entities/books-in-user-cart";
 import { Comments } from "../entities/comments";
+import { CommentNotifications } from "../entities/comment-notifications";
 
 export const userRepository = AppDataSource.getRepository(User);
 export const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
@@ -18,3 +19,4 @@ export const ratingRepository = AppDataSource.getRepository(BooksRating);
 export const cartRepository = AppDataSource.getRepository(Cart);
 export const booksInUserCartRepository = AppDataSource.getRepository(BooksInUserCart);
 export const commentsRepository = AppDataSource.getRepository(Comments);
+export const commentNotificationsRepository = AppDataSource.getRepository(CommentNotifications);
