@@ -9,6 +9,7 @@ import {
 import { io } from "../server";
 import { ConnectionManager } from "../socket";
 import { CommentNotifications } from "../db/entities/comment-notifications";
+import { AppError } from "../utils/app-error";
 
 const addBookComment: AppRequestHandler = async (req, res) => {
   const newComment = new Comments();
@@ -21,6 +22,10 @@ const addBookComment: AppRequestHandler = async (req, res) => {
 
   const activeSockets = ConnectionManager.getActiveSocket();
 
+  if (!req.user) {
+    throw new AppError('User not found', 404);
+  }
+
   newComment.bookId = req.body.bookId;
   newComment.userId = req.user.id;
   newComment.description = req.body.text;
@@ -30,9 +35,17 @@ const addBookComment: AppRequestHandler = async (req, res) => {
     where: { id: req.user.id }
   });
 
+  if (!commentAuthor) {
+    throw new AppError('User not found', 404);
+  }
+
   const currentBook = await bookRepository.findOne({
     where: { id: req.body.bookId }
   });
+
+  if (!currentBook) {
+    throw new AppError('Book not found', 404);
+  }
 
   await commentsRepository.save(newComment);
 
@@ -61,6 +74,10 @@ const addBookComment: AppRequestHandler = async (req, res) => {
         createAt: 'DESC',
       },
     });
+
+    if (!comment) {
+      throw new AppError('Comment is missing', 400);
+    };
 
     usersId.forEach((user) => {
       const commentNotification = new CommentNotifications();
