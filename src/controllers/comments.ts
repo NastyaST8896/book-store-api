@@ -80,15 +80,18 @@ const addBookComment: AppRequestHandler = async (req, res) => {
     };
 
     usersId.forEach((user) => {
-      const commentNotification = new CommentNotifications();
-      commentNotification.userId = user;
-      commentNotification.commentId = comment.id;
-      commentNotification.meta = {
-        type: 'bookComment',
-        bookId: req.body.bookId,
-        commentAuthorId: req.user.id,
+      if (req.user) {
+        const commentNotification = new CommentNotifications();
+        commentNotification.userId = user;
+        commentNotification.commentId = comment?.id;
+
+        commentNotification.meta = {
+          type: 'bookComment',
+          bookId: req.body.bookId,
+          commentAuthorId: req.user.id,
+        }
+        commentNotificationsRepository.save(commentNotification);
       }
-      commentNotificationsRepository.save(commentNotification);
     })
 
     if (activeSockets) {
@@ -100,8 +103,10 @@ const addBookComment: AppRequestHandler = async (req, res) => {
         date: comment.createAt,
         bookTitle: currentBook.title,
         text: comment.description,
-        img: `${process.env.BASE_URL + commentAuthor.media.filePath}`,
-        bookId: currentBook.id,
+        img: commentAuthor && commentAuthor.media ?
+          `${process.env.BASE_URL + commentAuthor.media.filePath}` :
+          `${process.env.BASE_URL} uploads/cover-1771846339695.png`,
+        bookId: currentBook?.id,
       });
     }
 
@@ -134,7 +139,13 @@ const getBookComments: AppRequestHandler = async (req, res) => {
     },
   });
 
-  let result = []
+  let result: {
+    id: number;
+    name: string;
+    date: Date;
+    text: string;
+    img: string;
+  }[] = [];
 
   if (comments) {
     result = comments.map((comment) => {
@@ -143,7 +154,9 @@ const getBookComments: AppRequestHandler = async (req, res) => {
         name: comment.user.fullName,
         date: comment.createAt,
         text: comment.description,
-        img: `${process.env.BASE_URL + comment.user.media.filePath}`,
+        img: comment.user.media ?
+          `${process.env.BASE_URL + comment.user.media.filePath}` :
+          `${process.env.BASE_URL} uploads/cover-1771846339695.png`
       }
     })
   }

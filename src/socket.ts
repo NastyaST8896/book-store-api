@@ -1,5 +1,6 @@
 import { Socket } from 'socket.io';
 import { DefaultEventsMap, Server } from 'socket.io';
+import http from 'http';
 
 export let io: Server | null = null;
 
@@ -7,7 +8,7 @@ export class ConnectionManager {
   private static io: Server | null = null;
   private static activeSockets = new Map();
 
-  public static createConnection(svr) {
+  public static createConnection(svr: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>) {
     this.io = new Server(svr, {
       cors: {
         origin: `${process.env.BASE_CLIENT_URL}`,
