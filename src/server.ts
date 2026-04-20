@@ -4,6 +4,7 @@ import { AppDataSource } from './config/database';
 import app from './app';
 import http from 'http';
 import { ConnectionManager } from './socket';
+import { commentsRepository } from './db/repositories/repository';
 
 const PORT = process.env.PORT || 3000;
 export const server = http.createServer(app);
@@ -19,11 +20,29 @@ AppDataSource.initialize()
       console.log(`Server running on port ${PORT}`);
     });
 
-    io.on('connection', async(socket) => {
-      ConnectionManager.setActiveSocket(socket.handshake.query.userId, socket);
+    io.on('connection', async (socket) => {
+      if (socket.handshake.query.userId) {
+        ConnectionManager.setActiveSocket(socket.handshake.query.userId, socket)
+
+        const booksSubscription = await commentsRepository
+          .createQueryBuilder("comments")
+          .select("comments.bookId")
+          .where(
+            "comments.userId = :userId",
+            { userId: socket.handshake.query.userId }
+          )
+          .distinct(true)
+          .getRawMany();
+
+        booksSubscription.forEach((book) => {
+          socket.join(`${book.comments_bookId} book room`);
+        })
+      }
 
       socket.on('disconnect', () => {
-        ConnectionManager.deleteActiveSocket(socket.handshake.query.userId)
+        if (socket.handshake.query.userId) {
+          ConnectionManager.deleteActiveSocket(socket.handshake.query.userId)
+        }
       });
     });
   })
