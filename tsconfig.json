@@ -13,7 +13,6 @@
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ES2015"],
-    "baseUrl": ".",
     "rootDir": "./src",
     "noEmit": false,
     "outDir": "./build"
