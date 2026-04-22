@@ -40,7 +40,13 @@ const setBookRating = Joi.object().keys({
   rating: Joi.number(),
 });
 
+const getBookComments = Joi.object().keys({
+  page: Joi.number().integer(),
+  limit: Joi.number().integer(),
+});
+
 export default {
   'get-books': getBooks,
   'set-rating': setBookRating,
+  'get-book-comments': getBookComments
 } as { [key: string]: ObjectSchema };
