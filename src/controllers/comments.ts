@@ -107,6 +107,7 @@ const addBookComment: AppRequestHandler = async (req, res) => {
           `${process.env.BASE_URL + commentAuthor.media.filePath}` :
           `${process.env.BASE_URL} uploads/cover-1771846339695.png`,
         bookId: currentBook?.id,
+        isRead: false
       });
     }
 
@@ -124,19 +125,24 @@ const addBookComment: AppRequestHandler = async (req, res) => {
 
 const getBookComments: AppRequestHandler = async (req, res) => {
   const bookId = +req.params.id
+  const page = req.validatedQuery?.page || 1;
+  const limit = req.validatedQuery?.limit || 5;
 
-  const comments = await commentsRepository.find({
+  const take = (page + 1) * limit;
+
+  const [comments, total] = await commentsRepository.findAndCount({
+    where: {
+      bookId
+    },
     relations: {
       user: {
         media: true,
       }
     },
-    where: {
-      bookId
-    },
     order: {
-      createAt: 'asc',
+      createAt: 'desc',
     },
+    take,
   });
 
   let result: {
@@ -161,9 +167,41 @@ const getBookComments: AppRequestHandler = async (req, res) => {
     })
   }
 
+  const totalPages = Math.ceil(total / limit);
+
+  const nextPage = (totalPages: number, page: number): number | null => {
+    const next = page + 1;
+
+    if (next > totalPages) {
+      return null;
+    }
+
+    return next;
+  };
+
+  const prevPage = (page: number): number | null => {
+    const next = page - 1;
+
+    if (next <= 0) {
+      return null;
+    }
+
+    return next;
+  };
+
   res.status(200).json({
     data: {
       comments: result,
+    },
+    meta: {
+      pagination: {
+        perPage: limit,
+        currentPage: page,
+        nextPage: nextPage(totalPages, page),
+        prevPage: prevPage(page),
+        totalPages,
+        totalAmount: total
+      }
     }
   });
 };

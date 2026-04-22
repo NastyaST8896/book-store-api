@@ -58,7 +58,7 @@ const createBook: AppRequestHandler = async (req, res) => {
       return genre.name;
     });
 
-    const newGenres = arrayGenres.filter((genre) => {
+    const newGenres = arrayGenres.filter((genre: string) => {
       return !dbNameGenres.includes(genre);
     });
 
@@ -98,18 +98,18 @@ const createBook: AppRequestHandler = async (req, res) => {
 };
 
 const getBooks: AppRequestHandler = async (req, res) => {
-  const page = req.validatedQuery.page || 1;
-  const limit = req.validatedQuery.limit || 8;
-  const sortBy = req.validatedQuery.sortBy || 'id';
-  const genres = req.validatedQuery.genres;
-  const searchValue = req.validatedQuery.searchValue;
+  const page = req.validatedQuery?.page || 1;
+  const limit = req.validatedQuery?.limit || 8;
+  const sortBy = req.validatedQuery?.sortBy || 'id';
+  const genres = req.validatedQuery?.genres;
+  const searchValue = req.validatedQuery?.searchValue;
 
   const where: any[] = [];
 
   const commonWhereOptions = {
     price: Between(
-      req.validatedQuery.minPrice || 0,
-      req.validatedQuery.maxPrice || Infinity
+      req.validatedQuery?.minPrice || 0,
+      req.validatedQuery?.maxPrice || Infinity
     ),
     genres: {
       id: (genres?.length && In(genres)),
@@ -161,7 +161,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
 
   const totalPages = Math.ceil(total / limit);
 
-  const nextPage = (totalPages: number, page: number): number => {
+  const nextPage = (totalPages: number, page: number): number | null => {
     const next = page + 1;
 
     if (next > totalPages) {
@@ -171,7 +171,7 @@ const getBooks: AppRequestHandler = async (req, res) => {
     return next;
   };
 
-  const prevPage = (page: number): number => {
+  const prevPage = (page: number): number | null => {
     const next = page - 1;
 
     if (next <= 0) {
@@ -244,7 +244,12 @@ const getBook: AppRequestHandler = async (req, res) => {
     where: { id: +req.params.id }
   });
 
-  let currentUserRating: number = 0;
+  if (!book) {
+    throw new Error('Book not found');
+  }
+
+  let currentUserRating: number | null = 0;
+
   if (req.query.userId) {
     const userRating = await ratingRepository.findOne({
       where: {
@@ -253,7 +258,7 @@ const getBook: AppRequestHandler = async (req, res) => {
       }
     });
 
-    currentUserRating = userRating?.rating;
+    currentUserRating = userRating?.rating || null;
   }
 
   res.json({
@@ -310,6 +315,10 @@ const setBookRating: AppRequestHandler = async (req, res) => {
 
   if (!book) {
     throw new Error(`Book width id: ${req.body.bookId} not found`);
+  }
+
+  if (!req.user) {
+    throw new Error('User not found');
   }
 
   const bookRating = new BooksRating();
