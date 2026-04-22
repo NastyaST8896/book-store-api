@@ -17,18 +17,18 @@ const getCommentBooksNotifications: AppRequestHandler = async (req, res) => {
     .where("commentNotifications.userId = :userId", { userId: req.user.id })
     .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
     .orderBy("commentNotifications.createAt", "DESC")
-    .take(10)
+    .take(5)
     .getMany();
 
-  const result = comments.map((comment) => {
-    // const author = await userRepository.findOne({
-    //   relations: { media: true },
-    //   where: { id: comment.userId }
-    // });
+    console.log(comments);
 
-    // const book = await bookRepository.findOne({
-    //   where: { id: comment.meta.bookId }
-    // });
+    const authorsId = comments.map((comment) => {
+      return comment.comment.userId
+    });
+
+    console.log(authorsId);
+
+  const result = comments.map((comment) => {
 
     return (
       {
@@ -38,7 +38,8 @@ const getCommentBooksNotifications: AppRequestHandler = async (req, res) => {
         bookTitle: 'title',
         text: comment.comment.description,
         img: `${process.env.BASE_URL} uploads/cover-1771846339695.png`,
-        bookId: comment.meta.bookId
+        bookId: comment.meta.bookId,
+        isRead: false,
       }
     )
   })
