@@ -1,5 +1,4 @@
-import { commentNotificationsRepository } from "../db/repositories/repository";
-import { ConnectionManager } from "../socket";
+import { commentNotificationsRepository, userRepository } from "../db/repositories/repository";
 import { AppError } from "../utils/app-error";
 import { AppRequestHandler } from "../utils/types";
 
@@ -8,36 +7,28 @@ const getCommentBooksNotifications: AppRequestHandler = async (req, res) => {
     throw new AppError('User not found', 404);
   }
 
-  const socket = ConnectionManager.getSocketByUserId(String(req.user.id));
-
   const comments = await commentNotificationsRepository
     .createQueryBuilder('commentNotifications')
     .leftJoinAndSelect('commentNotifications.comment', 'comment')
-    .leftJoinAndSelect('commentNotifications.user', 'user')
+    .leftJoinAndSelect('comment.book', 'book')
+    .leftJoinAndSelect('comment.user', 'user')
+    .leftJoinAndSelect('user.media', 'media')
     .where("commentNotifications.userId = :userId", { userId: req.user.id })
     .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
     .orderBy("commentNotifications.createAt", "DESC")
     .take(5)
     .getMany();
 
-    console.log(comments);
-
-    const authorsId = comments.map((comment) => {
-      return comment.comment.userId
-    });
-
-    console.log(authorsId);
 
   const result = comments.map((comment) => {
-
     return (
       {
         id: comment.commentId,
-        name: comment.user.fullName,
+        name: comment.comment.user.fullName,
         date: comment.createAt,
-        bookTitle: 'title',
+        bookTitle: comment.comment.book.title,
         text: comment.comment.description,
-        img: `${process.env.BASE_URL} uploads/cover-1771846339695.png`,
+        img: `${process.env.BASE_URL}${comment.comment.user.media?.filePath}`,
         bookId: comment.meta.bookId,
         isRead: false,
       }

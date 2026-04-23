@@ -103,9 +103,8 @@ const addBookComment: AppRequestHandler = async (req, res) => {
         date: comment.createAt,
         bookTitle: currentBook.title,
         text: comment.description,
-        img: commentAuthor && commentAuthor.media ?
-          `${process.env.BASE_URL + commentAuthor.media.filePath}` :
-          `${process.env.BASE_URL} uploads/cover-1771846339695.png`,
+        img: commentAuthor && commentAuthor.media &&
+          `${process.env.BASE_URL + commentAuthor.media.filePath}`,
         bookId: currentBook?.id,
         isRead: false
       });
