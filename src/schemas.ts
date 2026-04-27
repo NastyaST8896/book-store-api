@@ -46,7 +46,7 @@ const getBookComments = Joi.object().keys({
 });
 
 const getBookCommentsNotifications = Joi.object().keys({
-  page: Joi.number().integer(),
+  notificationId: Joi.number().integer(),
   limit: Joi.number().integer(),
 });
 
