@@ -18,7 +18,6 @@ const getCommentBooksNotifications: AppRequestHandler = async (req, res) => {
       .leftJoinAndSelect('comment.user', 'user')
       .leftJoinAndSelect('user.media', 'media')
       .where("commentNotifications.userId = :userId", { userId: req.user.id })
-      .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
       .orderBy("commentNotifications.createAt", "DESC")
       .take(limit)
       .getMany();
@@ -31,7 +30,6 @@ const getCommentBooksNotifications: AppRequestHandler = async (req, res) => {
       .leftJoinAndSelect('user.media', 'media')
       .where("commentNotifications.userId = :userId", { userId: req.user.id })
       .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
-      .andWhere("commentNotifications.id < :id", { id: notificationId })
       .orderBy("commentNotifications.createAt", "DESC")
       .take(limit)
       .getMany();
