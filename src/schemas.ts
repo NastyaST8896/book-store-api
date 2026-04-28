@@ -50,9 +50,14 @@ const getBookCommentsNotifications = Joi.object().keys({
   limit: Joi.number().integer(),
 });
 
+const getBookCommentNotification = Joi.object().keys({
+  commentId: Joi.number().integer(),
+});
+
 export default {
   'get-books': getBooks,
   'set-rating': setBookRating,
   'get-book-comments': getBookComments,
   'get-book-comments-notifications': getBookCommentsNotifications,
+  'get-book-comment-notification': getBookCommentNotification,
 } as { [key: string]: ObjectSchema };
