@@ -11,7 +11,8 @@ declare global {
         minPrice?: number;
         genres?: string[];
         searchValue?: string[];
-        notificationId: number;
+        notificationId?: number;
+        commentId?: nember;
       };
       user?: {
         id: number;
