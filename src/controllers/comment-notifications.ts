@@ -29,17 +29,22 @@ const getCommentBooksNotifications: AppRequestHandler = async (req, res) => {
       .leftJoinAndSelect('comment.user', 'user')
       .leftJoinAndSelect('user.media', 'media')
       .where("commentNotifications.userId = :userId", { userId: req.user.id })
-      .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
+      .andWhere("commentNotifications.id < :id", { id: notificationId })
       .orderBy("commentNotifications.createAt", "DESC")
       .take(limit)
       .getMany();
   }
 
   const total = await commentNotificationsRepository
-  .createQueryBuilder('commentNotifications')
-  .where("commentNotifications.userId = :userId", { userId: req.user.id })
-  .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
-  .getCount();
+    .createQueryBuilder('commentNotifications')
+    .where("commentNotifications.userId = :userId", { userId: req.user.id })
+    .getCount();
+
+  const notViewed = await commentNotificationsRepository
+    .createQueryBuilder('commentNotifications')
+    .where("commentNotifications.userId = :userId", { userId: req.user.id })
+    .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
+    .getCount();
 
   const result = comments.map((comment) => {
     return (
@@ -52,7 +57,7 @@ const getCommentBooksNotifications: AppRequestHandler = async (req, res) => {
         text: comment.comment.description,
         img: `${process.env.BASE_URL}${comment.comment.user.media?.filePath}`,
         bookId: comment.meta.bookId,
-        isRead: false,
+        isRead: comment.isRead,
       }
     )
   });
@@ -64,7 +69,8 @@ const getCommentBooksNotifications: AppRequestHandler = async (req, res) => {
     meta: {
       pagination: {
         limit: limit,
-        totalAmount: total || 0
+        totalAmount: total || 0,
+        notViewedAmount: notViewed || 0,
       }
     }
   });
