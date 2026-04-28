@@ -9,4 +9,21 @@ export const CommentNotificationsRouter = Router()
     authenticateToken,
     schemaQueryValidator('get-book-comments-notifications'),
     CommentNotificationsController.getCommentBooksNotifications
+  )
+  .get(
+    '/book-notification',
+    authenticateToken,
+    schemaQueryValidator('get-book-comment-notification'),
+    CommentNotificationsController.getCommentBookNotification
+  )
+  .patch(
+    '/viewed',
+    authenticateToken,
+    CommentNotificationsController.patchNotificationsIsRead
+  )
+  .get(
+    '/not-viewed-notifications',
+    authenticateToken,
+    schemaQueryValidator('get-book-comments-notifications'),
+    CommentNotificationsController.getCommentBooksNotifications
   );
