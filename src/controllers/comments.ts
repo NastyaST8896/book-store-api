@@ -110,10 +110,10 @@ const addBookComment: AppRequestHandler = async (req, res) => {
       });
     }
 
-    // socket.broadcast.emit(
-    //   eventsKeyList.NEW_COMMENT_TOAST,
-    //   { title: currentBook.title, id: currentBook.id }
-    // );
+    socket.broadcast.emit(
+      eventsKeyList.NEW_COMMENT_TOAST,
+      { title: currentBook.title, id: currentBook.id }
+    );
   }
 
 
