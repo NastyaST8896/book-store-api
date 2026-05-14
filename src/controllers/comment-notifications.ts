@@ -134,21 +134,38 @@ const getNotViewedBookCommentNotifications: AppRequestHandler = async (req, res)
     throw new AppError('User not found', 404);
   }
 
-  const notificationId = req.validatedQuery?.notificationId;
+  let notifications;
+
+  const notificationId = req.validatedQuery?.notificationId || null;
+
   const limit = req.validatedQuery?.limit || 5;
 
-  const notifications = await commentNotificationsRepository
-    .createQueryBuilder('commentNotifications')
-    .leftJoinAndSelect('commentNotifications.comment', 'comment')
-    .leftJoinAndSelect('comment.book', 'book')
-    .leftJoinAndSelect('comment.user', 'user')
-    .leftJoinAndSelect('user.media', 'media')
-    .where("commentNotifications.userId = :userId", { userId: req.user.id })
-    .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
-    .andWhere("commentNotifications.id < :id", { id: notificationId })
-    .orderBy("commentNotifications.createAt", "DESC")
-    .take(limit)
-    .getMany();
+  if (notificationId === null) {
+    notifications = await commentNotificationsRepository
+      .createQueryBuilder('commentNotifications')
+      .leftJoinAndSelect('commentNotifications.comment', 'comment')
+      .leftJoinAndSelect('comment.book', 'book')
+      .leftJoinAndSelect('comment.user', 'user')
+      .leftJoinAndSelect('user.media', 'media')
+      .where("commentNotifications.userId = :userId", { userId: req.user.id })
+      .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
+      .orderBy("commentNotifications.createAt", "DESC")
+      .take(limit)
+      .getMany();
+  } else {
+    notifications = await commentNotificationsRepository
+      .createQueryBuilder('commentNotifications')
+      .leftJoinAndSelect('commentNotifications.comment', 'comment')
+      .leftJoinAndSelect('comment.book', 'book')
+      .leftJoinAndSelect('comment.user', 'user')
+      .leftJoinAndSelect('user.media', 'media')
+      .where("commentNotifications.userId = :userId", { userId: req.user.id })
+      .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
+      .andWhere("commentNotifications.id < :id", { id: notificationId })
+      .orderBy("commentNotifications.createAt", "DESC")
+      .take(limit)
+      .getMany();
+  }
 
   const result = notifications.map((notification) => {
     return (
@@ -180,6 +197,7 @@ const getNotViewedBookCommentNotifications: AppRequestHandler = async (req, res)
       pagination: {
         limit: limit,
         totalAmount: total || 0,
+        notViewedAmount: total || 0,
       }
     },
   });
