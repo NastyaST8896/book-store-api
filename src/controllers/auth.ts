@@ -9,7 +9,7 @@ import { AppRequest } from '../utils/types';
 import { validateEmail, validatePassword } from '../utils/validations';
 import { checkIsEmailAvailable } from '../utils/helpers';
 import { AppError } from '../utils/app-error';
-import { date } from 'joi';
+
 
 
 

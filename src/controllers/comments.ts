@@ -49,7 +49,7 @@ const addBookComment: AppRequestHandler = async (req, res) => {
 
   await commentsRepository.save(newComment);
 
-  const socket = ConnectionManager.getSocketByUserId(String(req.user.id));
+  const socket = ConnectionManager.getSocketByUserId(req.user.id);
   socket.join(`${req.body.bookId} book room`);
 
   const usersSubscribedToBookNotification = await commentsRepository
@@ -95,7 +95,7 @@ const addBookComment: AppRequestHandler = async (req, res) => {
     })
 
     if (activeSockets) {
-      const socket = ConnectionManager.getSocketByUserId(String(req.user.id));
+      const socket = ConnectionManager.getSocketByUserId(+req.user.id);
       socket.to(`${req.body.bookId} book room`).emit(
         eventsKeyList.BOOK_COMMENT_NOTIFICATION, {
         id: comment.id,

@@ -8,8 +8,8 @@ export class ConnectionManager {
   private static io: Server | null = null;
   private static activeSockets = new Map();
 
-  public static createConnection(svr: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>) {
-    this.io = new Server(svr, {
+  public static createConnection(srv: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>) {
+    this.io = new Server(srv, {
       cors: {
         origin: `${process.env.BASE_CLIENT_URL}`,
         methods: ["GET", "POST"],
@@ -20,13 +20,13 @@ export class ConnectionManager {
   }
 
   public static setActiveSocket(
-    userId: string | string[],
+    userId: number | number[],
     socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
   ) {
     this.activeSockets.set(userId, socket);
   }
 
-  public static deleteActiveSocket(userId: string | string[]) {
+  public static deleteActiveSocket(userId: number | number[]) {
     this.activeSockets.delete(userId);
   }
 
@@ -34,7 +34,7 @@ export class ConnectionManager {
     return this.activeSockets;
   }
 
-  public static getSocketByUserId(userId: string) {
+  public static getSocketByUserId(userId: number) {
     return this.activeSockets.get(userId);
   }
 }
