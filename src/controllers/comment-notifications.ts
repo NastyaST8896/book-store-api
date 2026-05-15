@@ -11,29 +11,21 @@ const getCommentBooksNotifications: AppRequestHandler = async (req, res) => {
   const limit = req.validatedQuery?.limit || 5;
   let comments;
 
+  let query = commentNotificationsRepository
+    .createQueryBuilder('commentNotifications')
+    .leftJoinAndSelect('commentNotifications.comment', 'comment')
+    .leftJoinAndSelect('comment.book', 'book')
+    .leftJoinAndSelect('comment.user', 'user')
+    .leftJoinAndSelect('user.media', 'media')
+    .where("commentNotifications.userId = :userId", { userId: req.user.id })
+    .orderBy("commentNotifications.createAt", "DESC")
+    .take(limit)
+
   if (notificationId === null) {
-    comments = await commentNotificationsRepository
-      .createQueryBuilder('commentNotifications')
-      .leftJoinAndSelect('commentNotifications.comment', 'comment')
-      .leftJoinAndSelect('comment.book', 'book')
-      .leftJoinAndSelect('comment.user', 'user')
-      .leftJoinAndSelect('user.media', 'media')
-      .where("commentNotifications.userId = :userId", { userId: req.user.id })
-      .orderBy("commentNotifications.createAt", "DESC")
-      .take(limit)
-      .getMany();
+    comments = await query.getMany();
   } else {
-    comments = await commentNotificationsRepository
-      .createQueryBuilder('commentNotifications')
-      .leftJoinAndSelect('commentNotifications.comment', 'comment')
-      .leftJoinAndSelect('comment.book', 'book')
-      .leftJoinAndSelect('comment.user', 'user')
-      .leftJoinAndSelect('user.media', 'media')
-      .where("commentNotifications.userId = :userId", { userId: req.user.id })
-      .andWhere("commentNotifications.id < :id", { id: notificationId })
-      .orderBy("commentNotifications.createAt", "DESC")
-      .take(limit)
-      .getMany();
+    query = query.andWhere("commentNotifications.id < :id", { id: notificationId });
+    comments = await query.getMany();
   }
 
   const total = await commentNotificationsRepository
@@ -140,31 +132,21 @@ const getNotViewedBookCommentNotifications: AppRequestHandler = async (req, res)
 
   const limit = req.validatedQuery?.limit || 5;
 
+  let query = commentNotificationsRepository
+    .createQueryBuilder('commentNotifications')
+    .leftJoinAndSelect('commentNotifications.comment', 'comment')
+    .leftJoinAndSelect('comment.book', 'book')
+    .leftJoinAndSelect('comment.user', 'user')
+    .leftJoinAndSelect('user.media', 'media')
+    .where("commentNotifications.userId = :userId", { userId: req.user.id })
+    .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
+    .orderBy("commentNotifications.createAt", "DESC")
+    .take(limit)
   if (notificationId === null) {
-    notifications = await commentNotificationsRepository
-      .createQueryBuilder('commentNotifications')
-      .leftJoinAndSelect('commentNotifications.comment', 'comment')
-      .leftJoinAndSelect('comment.book', 'book')
-      .leftJoinAndSelect('comment.user', 'user')
-      .leftJoinAndSelect('user.media', 'media')
-      .where("commentNotifications.userId = :userId", { userId: req.user.id })
-      .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
-      .orderBy("commentNotifications.createAt", "DESC")
-      .take(limit)
-      .getMany();
+    notifications = await query.getMany();
   } else {
-    notifications = await commentNotificationsRepository
-      .createQueryBuilder('commentNotifications')
-      .leftJoinAndSelect('commentNotifications.comment', 'comment')
-      .leftJoinAndSelect('comment.book', 'book')
-      .leftJoinAndSelect('comment.user', 'user')
-      .leftJoinAndSelect('user.media', 'media')
-      .where("commentNotifications.userId = :userId", { userId: req.user.id })
-      .andWhere("commentNotifications.isRead = :isRead", { isRead: false })
-      .andWhere("commentNotifications.id < :id", { id: notificationId })
-      .orderBy("commentNotifications.createAt", "DESC")
-      .take(limit)
-      .getMany();
+    query = query.andWhere("commentNotifications.id < :id", { id: notificationId });
+    notifications = await query.getMany();
   }
 
   const result = notifications.map((notification) => {
